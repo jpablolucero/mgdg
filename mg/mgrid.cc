@@ -382,7 +382,7 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
 	   			       << std::scientific << std::flush;
 	  if (norm/initial_norm < accuracy) break;        // break
 	  ++it ;
-	  sadd(x,M.template vcycle<2,1,2,prt>
+	  sadd(x,M.template vcycle<nr/2,1,1,prt>
 	       (std::forward<typename std::remove_reference<decltype(A)>::type>(A),
 		std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
 	                                                  // x_1 = x_0 + B (f - A x_0)
@@ -407,7 +407,7 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
 template <std::size_t nel,typename number=double>
 constexpr auto mymain()
 {
-  return richardson<2*nel,2*nel>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
+  return richardson<2*nel,2*nel,false>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
 }
 
 template <std::size_t N, std::size_t ...Is>
@@ -424,6 +424,7 @@ constexpr auto make_main()
 
 int main(int argc, char *argv[])
 {
-  const volatile auto x = make_main<8>();
+  // const volatile auto x = make_main<4>();
+  const volatile auto x = mymain<8>();
   return 0;
 }
