@@ -157,11 +157,12 @@ public:
       
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	x += R.transpose()*
-	  vcycle0<n0,m*s,m>(std::forward<const Eigen::Matrix<number,nr/2,nr/2> >(R*A*R.transpose()),
-			    std::forward<const Eigen::Matrix<number,nr/2,1> >(R * (res - A*x)),
-			    rlx);
-	                                     // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                             //                    y_1 = x_1 + q_1
+	  vcycle0
+	  <n0,m*s,m>(std::forward<const Eigen::Matrix<number,nr/2,nr/2> >(R*A*R.transpose()),
+		     std::forward<const Eigen::Matrix<number,nr/2,1> >(R * (res - A*x)),
+		     rlx);
+	                                 // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+                                         //                    y_1 = x_1 + q_1
 
 	for (auto sit = 0;sit<s;++sit)
 	  x += (rlx/A(0,0)) * (res - A*x);
@@ -209,11 +210,14 @@ public:
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 
 	x += R.transpose() *
-	  vcycle<n0,m*s,m,prt>(std::forward<const Eigen::Matrix<number,nr/2,nr/2> > (R*A*R.transpose()),
-			       std::forward<const Eigen::Matrix<number,nr/2,1> >(R * (res - A*x)),
-			       rlx);
-                                             // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                             //              y_1 = x_1 + q_1
+	  vcycle
+	  <n0,m*s,m,prt>(std::forward
+			 <const Eigen::Matrix<number,nr/2,nr/2> >(R*A*R.transpose()),
+			 std::forward
+			 <const Eigen::Matrix<number,nr/2,1> >(R * (res - A*x)),
+			 rlx);
+	                                 // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+                                         //                    y_1 = x_1 + q_1
       
 	if constexpr (prt) std::cout << " \u2197 " <<  std::flush;
 
@@ -256,7 +260,7 @@ constexpr auto richardson(const Eigen::Matrix<number,nc,nr> & A,
       while (true)
 	{
 	  res = rhs - A*x;                                //                f - A x
-	  norm = res.norm() ;                       //             \| f - A x \|
+	  norm = res.norm() ;                             //             \| f - A x \|
 	  if constexpr (prt) std::cout.precision(3);
 	  if constexpr (prt) std::cout << "\rN:" << nr/2 << "\tIteration: "<< it << "\t"
 	  			       << initial_norm << " \u2192 " << norm << " "
@@ -287,7 +291,7 @@ constexpr auto richardson(const Eigen::Matrix<number,nc,nr> & A,
 template <int nel,typename number=double>
 constexpr auto mymain()
 {
-  return richardson<2*nel,2*nel,false>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
+  return richardson<2*nel,2*nel>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
 }
 
 template <int N, int ...Is>

@@ -151,11 +151,14 @@ public:
       
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	x += blaze::trans(R)*
-	  vcycle0<n0,m*s,m>(std::forward<const blaze::StaticMatrix<number,nr/2,nr/2> >(R*A*blaze::trans(R)),
-			    std::forward<const blaze::StaticVector<number,nr/2> >(R * (res - A*x)),
-			    rlx);
-	                                     // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                             //                    y_1 = x_1 + q_1
+	  vcycle0
+	  <n0,m*s,m>(std::forward
+		     <const blaze::StaticMatrix<number,nr/2,nr/2> >(R*A*blaze::trans(R)),
+		     std::forward
+		     <const blaze::StaticVector<number,nr/2> >(R * (res - A*x)),
+		     rlx);
+	                                 // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+                                         //                    y_1 = x_1 + q_1
 
 	for (auto sit = 0;sit<s;++sit)
 	  x += (rlx/A(0,0)) * (res - A*x);
@@ -167,7 +170,8 @@ public:
   template <std::size_t n0=2, std::size_t s=1, std::size_t m=1, bool prt=true,
 	    std::size_t nr, std::size_t nc>
   constexpr blaze::StaticVector<number,nr>
-  vcycle(const blaze::StaticMatrix<number,nc,nr> && A,const blaze::StaticVector<number,nc> && res,
+  vcycle(const blaze::StaticMatrix<number,nc,nr> && A,
+	 const blaze::StaticVector<number,nc> && res,
 	 const number rlx=1.) const
   {
     if constexpr (nr == n0)
@@ -200,11 +204,14 @@ public:
       
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	x += blaze::trans(R)*
-	  vcycle<n0,m*s,m,prt>(std::forward<const blaze::StaticMatrix<number,nr/2,nr/2> > (R*A*blaze::trans(R)),
-			       std::forward<const blaze::StaticVector<number,nr/2> >(R * (res - A*x)),
-			       rlx);
-                                             // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                             //              y_1 = x_1 + q_1
+	  vcycle
+	  <n0,m*s,m,prt>(std::forward
+			 <const blaze::StaticMatrix<number,nr/2,nr/2> > (R*A*blaze::trans(R)),
+			 std::forward
+			 <const blaze::StaticVector<number,nr/2> >(R * (res - A*x)),
+			 rlx);
+                                         // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+                                         //              y_1 = x_1 + q_1
       
 	if constexpr (prt) std::cout << " \u2197 " <<  std::flush;
 
@@ -278,7 +285,7 @@ constexpr auto richardson(const blaze::StaticMatrix<number,nc,nr> & A,
 template <std::size_t nel,typename number=double>
 constexpr auto mymain()
 {
-  return richardson<2*nel,2*nel,false>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
+  return richardson<2*nel,2*nel>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
 }
 
 template <std::size_t N, std::size_t ...Is>

@@ -16,7 +16,8 @@ operator *(const std::array<number,nr> & x, const std::array<number,nr> & y)
 }
 
 template <std::size_t nr, std::size_t nc, typename number=double>
-constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+constexpr
+inline typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
 operator *(const std::array<std::array<number,nc>,nr> & A,const std::array<number,nc> & x)
 {
   std::array<number,nr> res{} ;
@@ -26,7 +27,8 @@ operator *(const std::array<std::array<number,nc>,nr> & A,const std::array<numbe
   return res ;
 }
 
-template <std::size_t nrA, std::size_t ncA, std::size_t nrB, std::size_t ncB, typename number=double>
+template
+<std::size_t nrA, std::size_t ncA, std::size_t nrB, std::size_t ncB, typename number=double>
 constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,
 				  std::array<std::array<number,ncB>,nrA> >::type
 operator *(const std::array<std::array<number,ncA>,nrA> & A,
@@ -253,28 +255,29 @@ public:
 
 	for (auto sit = 0;sit<s;++sit)
 	  {
-	    g = res ;                        //                             g
-	    sadd(g,A*x,-1.);                 //                             g - A x_0
-	    sadd(x,g,rlx/A[0][0]);           //              x_1 = x_0 + B (g - A x_0)
+	    g = res ;                    //                             g
+	    sadd(g,A*x,-1.);             //                             g - A x_0
+	    sadd(x,g,rlx/A[0][0]);       //              x_1 = x_0 + B (g - A x_0)
 	  }
       
-	g = res ;                            //                             g
-	sadd(g,A*x,-1.);                     //                             g - A x_1
+	g = res ;                        //                             g
+	sadd(g,A*x,-1.);                 //                             g - A x_1
 
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	const auto & RT = std::get<logg2(N/nr)-1>(prol);
 
 	sadd(x,RT*
-	     vcycle0<n0,m*s,m>(std::forward<const std::array<std::array<number,nr/2>,nr/2> >(R*A*RT),
-			       std::forward<const std::array<number,nr/2> >(R*g),rlx));
-	                                     // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                             //                    y_1 = x_1 + q_1
+	     vcycle0
+	     <n0,m*s,m>(std::forward<const std::array<std::array<number,nr/2>,nr/2> >(R*A*RT),
+			std::forward<const std::array<number,nr/2> >(R*g),rlx));
+	                                 // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+                                         //                    y_1 = x_1 + q_1
 
 	for (auto sit = 0;sit<s;++sit)
 	  {
-	    g = res ;                        //                             g
-	    sadd(g,A*x,-1.);                 //                             g - A y_1
-	    sadd(x,g,rlx/A[0][0]);           //              y_2 = y_1 + B (g - A y_1)
+	    g = res ;                    //                             g
+	    sadd(g,A*x,-1.);             //                             g - A y_1
+	    sadd(x,g,rlx/A[0][0]);       //              y_2 = y_1 + B (g - A y_1)
 	  }
 
 	return x ;
@@ -312,30 +315,32 @@ public:
 	if constexpr (prt and (s>1)) std::cout << "(" << s << ")" << std::flush ;
 	for (auto sit = 0;sit<s;++sit)
 	  {
-	    g = res ;                        //                             g
-	    sadd(g,A*x,-1.);                 //                             g - A x_0
-	    sadd(x,g,rlx/A[0][0]);           //              x_1 = x_0 + B (g - A x_0)
+	    g = res ;                    //                             g
+	    sadd(g,A*x,-1.);             //                             g - A x_0
+	    sadd(x,g,rlx/A[0][0]);       //              x_1 = x_0 + B (g - A x_0)
 	  }
 	if constexpr (prt) std::cout << " \u2198 " << std::flush;
       
-	g = res ;                            //                             g
-	sadd(g,A*x,-1.);                     //                             g - A x_1
+	g = res ;                        //                             g
+	sadd(g,A*x,-1.);                 //                             g - A x_1
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	const auto & RT = std::get<logg2(N/nr)-1>(prol);
 
 	sadd(x,RT*
-	     vcycle<n0,m*s,m,prt>(std::forward<const std::array<std::array<number,nr/2>,nr/2> >
-				  (R*A*RT),
-				  std::forward<const std::array<number,nr/2> >(R*g),rlx));
-                                             // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                             //              y_1 = x_1 + q_1
+	     vcycle
+	     <n0,m*s,m,prt>(std::forward
+			    <const std::array<std::array<number,nr/2>,nr/2> >(R*A*RT),
+			    std::forward
+			    <const std::array<number,nr/2> >(R*g),rlx));
+                                         // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+                                         //              y_1 = x_1 + q_1
       
 	if constexpr (prt) std::cout << " \u2197 " <<  std::flush;
 	for (auto sit = 0;sit<s;++sit)
 	  {
-	    g = res ;                        //                             g
-	    sadd(g,A*x,-1.);                 //                             g - A y_1
-	    sadd(x,g,rlx/A[0][0]);           //              y_2 = y_1 + B (g - A y_1)
+	    g = res ;                    //                             g
+	    sadd(g,A*x,-1.);             //                             g - A y_1
+	    sadd(x,g,rlx/A[0][0]);       //              y_2 = y_1 + B (g - A y_1)
 	  }
 	if constexpr (prt) std::cout << nr/2 << std::flush;
 	if constexpr (prt and (s>1)) std::cout << "(" << s << ")" << std::flush ;
@@ -405,7 +410,7 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
 template <std::size_t nel,typename number=double>
 constexpr auto mymain()
 {
-  return richardson<2*nel,2*nel,false>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
+  return richardson<2*nel,2*nel>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
 }
 
 template <std::size_t N, std::size_t ...Is>
