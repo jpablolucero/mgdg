@@ -3,12 +3,13 @@
 #include <iostream>
 #include <iomanip>
 #include <random>
-#include <blaze/Math.h>
+#include <Eigen/Dense>
 
-template <std::size_t n,typename number=double>
+template <int n,typename number=double>
 constexpr auto assemble(const number d,const number L=1.)
 {
-  blaze::StaticMatrix<number,2*n,2*n> A{};
+  Eigen::Matrix<number,2*n,2*n> A{};
+  A.setZero();
   const auto h = L/static_cast<number>(n);
   for (auto i = 0u;i<2*n;++i)
     {
@@ -26,10 +27,11 @@ constexpr auto assemble(const number d,const number L=1.)
   return A;
 }
 
-template <std::size_t n,typename number=double>
+template <int n,typename number=double>
 constexpr auto smoother_precond(const number d,const number L=1.)
 {
-  blaze::StaticMatrix<number,2*n,2*n> A{};
+  Eigen::Matrix<number,2*n,2*n> A{};
+  A.setZero();
   const auto h = L/static_cast<number>(n);
   const double det = d/h*d/h - (-d/h+1./h)*(-d/h+1./h);
   A(0,0) = 1./(d/h);
@@ -48,17 +50,17 @@ constexpr auto smoother_precond(const number d,const number L=1.)
   return A;
 }
 
-template <std::size_t n,typename number=double>
+template <int n,typename number=double>
 constexpr auto assemble_rhs()
 {
-  blaze::StaticVector<number,2*n> rhs{} ;
+  Eigen::Matrix<number,2*n,1> rhs{} ;
   for (auto & el : rhs) el = 1./static_cast<number>(n)/2.;
   return rhs;
 }
 
-constexpr std::size_t logg2(const std::size_t N)
+constexpr int logg2(const int N)
 {
-  std::size_t res = 0;
+  int res = 0;
   auto n = N;
   while (n != 0) {
     n /= 2;
@@ -67,10 +69,11 @@ constexpr std::size_t logg2(const std::size_t N)
   return res;
 }
 
-template <std::size_t n,typename number=double>
-constexpr blaze::StaticMatrix<number,n,2*n> restrict_matrix()
+template <int n,typename number=double>
+constexpr Eigen::Matrix<number,n,2*n> restrict_matrix()
 {
-  blaze::StaticMatrix<number,n,2*n> R{};
+  Eigen::Matrix<number,n,2*n> R{};
+  R.setZero();
   R(0,0) = 1.;
   R(0,1) = 0.5;
   R(1,1) = 0.5;
@@ -80,6 +83,7 @@ constexpr blaze::StaticMatrix<number,n,2*n> restrict_matrix()
   auto i = 1u;
   for (auto j=3u;j<2*n-3;j+=4)
     {
+      auto k=0u;
       R(i,j) = 1.;
       R(i+1,j+1) = 1.;
       if (j<2*n-3)
@@ -96,24 +100,24 @@ constexpr blaze::StaticMatrix<number,n,2*n> restrict_matrix()
   return R;
 }
 
-template <std::size_t N, std::size_t ...Is>
-constexpr auto make_restriction_impl(const std::index_sequence<Is...>)
+template <int N, int ...Is>
+constexpr auto make_restriction_impl(const std::integer_sequence<int,Is...>)
 {
   return std::make_tuple(restrict_matrix<(N >> Is)>()...);
 }
 
-template <std::size_t N,typename number=double>
-constexpr auto make_restriction(blaze::StaticMatrix<number,N,N>)
+template <int N,typename number=double>
+constexpr auto make_restriction(Eigen::Matrix<number,N,N>)
 {
-  return make_restriction_impl<N/2>(std::make_index_sequence<logg2(N/2) - 1>());
+  return make_restriction_impl<N/2>(std::make_integer_sequence<int,logg2(N/2) - 1>());
 }
 
-template <std::size_t N,typename Restriction, typename number=double>
+template <int N,typename Restriction, typename number=double>
 class Multigrid
 {
 public:
   
-  constexpr Multigrid(const blaze::StaticMatrix<number,N,N>&,
+  constexpr Multigrid(const Eigen::Matrix<number,N,N>&,
 		      const Restriction && rest_):
     rest(std::forward<const Restriction>(rest_))
   {}
@@ -124,19 +128,21 @@ private:
 
 public:
   
-  template <std::size_t n0=2, std::size_t s=1, std::size_t m=1,std::size_t nr, std::size_t nc>
-  constexpr blaze::StaticVector<number,nr>
-  vcycle0(const blaze::StaticMatrix<number,nc,nr> && A,const blaze::StaticVector<number,nc> && res,
+  template <int n0=2, int s=1, int m=1,int nr, int nc>
+  constexpr Eigen::Matrix<number,nr,1>
+  vcycle0(const Eigen::Matrix<number,nc,nr> && A,const Eigen::Matrix<number,nc,1> && res,
 	  const number rlx=1.) const
   {
     if constexpr (nr == n0)
       {
-	blaze::StaticVector<number,nr> q{},resq{};
+	Eigen::Matrix<number,nr,1> q{},resq{};
+	q.setZero();
+	resq.setZero();
 	number norm = 1. ;
 	while (true)
 	  {
 	    resq = res - A*q;
-	    norm = blaze::norm(resq) ;
+	    norm = resq.norm() ;
 	    if (norm < 1.E-12) break ;      
 	    q += (1./A(0,0)) * resq ;
 	  }
@@ -144,15 +150,15 @@ public:
       }
     else
       {
-	blaze::StaticVector<number,nr> x{};
-
+	Eigen::Matrix<number,nr,1> x{};
+	x.setZero();
 	for (auto sit = 0;sit<s;++sit)
 	  x += (rlx/A(0,0)) * (res - A*x);
       
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
-	x += blaze::trans(R)*
-	  vcycle0<n0,m*s,m>(std::forward<const blaze::StaticMatrix<number,nr/2,nr/2> >(R*A*blaze::trans(R)),
-			    std::forward<const blaze::StaticVector<number,nr/2> >(R * (res - A*x)),
+	x += R.transpose()*
+	  vcycle0<n0,m*s,m>(std::forward<const Eigen::Matrix<number,nr/2,nr/2> >(R*A*R.transpose()),
+			    std::forward<const Eigen::Matrix<number,nr/2,1> >(R * (res - A*x)),
 			    rlx);
 	                                     // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
                                              //                    y_1 = x_1 + q_1
@@ -164,21 +170,23 @@ public:
       }
   }
   
-  template <std::size_t n0=2, std::size_t s=1, std::size_t m=1, bool prt=true,
-	    std::size_t nr, std::size_t nc>
-  constexpr blaze::StaticVector<number,nr>
-  vcycle(const blaze::StaticMatrix<number,nc,nr> && A,const blaze::StaticVector<number,nc> && res,
+  template <int n0=2, int s=1, int m=1, bool prt=true,
+	    int nr, int nc>
+  constexpr Eigen::Matrix<number,nr,1>
+  vcycle(const Eigen::Matrix<number,nc,nr> && A,const Eigen::Matrix<number,nc,1> && res,
 	 const number rlx=1.) const
   {
     if constexpr (nr == n0)
       {
 	if constexpr (prt) std::cout << nr/2 << std::flush;
-	blaze::StaticVector<number,nr> q{},resq{};
+	Eigen::Matrix<number,nr,1> q{},resq{};
+	q.setZero();
+	resq.setZero();
 	number norm = 1. ;
 	while (true)
 	  {
 	    resq = res - A*q;
-	    norm = blaze::norm(resq) ;
+	    norm = resq.norm() ;
 	    if (norm < 1.E-12) break ;
 	    q += vcycle0<2,1,2>
 	      (std::forward<typename std::remove_reference<decltype(A)>::type> (A),
@@ -188,8 +196,8 @@ public:
       }
     else
       {
-	blaze::StaticVector<number,nr> x{};
-	
+	Eigen::Matrix<number,nr,1> x{};
+	x.setZero();
 	if constexpr (prt) std::cout << nr/2 << std::flush;
 	if constexpr (prt and (s>1)) std::cout << "(" << s << ")" << std::flush ;
 
@@ -197,11 +205,12 @@ public:
 	  x += (rlx/A(0,0))*(res - A*x);
 
 	if constexpr (prt) std::cout << " \u2198 " << std::flush;
-      
+	
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
-	x += blaze::trans(R)*
-	  vcycle<n0,m*s,m,prt>(std::forward<const blaze::StaticMatrix<number,nr/2,nr/2> > (R*A*blaze::trans(R)),
-			       std::forward<const blaze::StaticVector<number,nr/2> >(R * (res - A*x)),
+
+	x += R.transpose() *
+	  vcycle<n0,m*s,m,prt>(std::forward<const Eigen::Matrix<number,nr/2,nr/2> > (R*A*R.transpose()),
+			       std::forward<const Eigen::Matrix<number,nr/2,1> >(R * (res - A*x)),
 			       rlx);
                                              // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
                                              //              y_1 = x_1 + q_1
@@ -219,18 +228,19 @@ public:
   }
 };
 
-template <std::size_t nr, std::size_t nc, bool rnd = true, bool prt=true, bool rndtest=false,
+template <int nr, int nc, bool rnd = true, bool prt=true, bool rndtest=false,
 	  typename number=double>
-constexpr auto richardson(const blaze::StaticMatrix<number,nc,nr> & A,
-			  const blaze::StaticVector<number,nr> & rhs,
+constexpr auto richardson(const Eigen::Matrix<number,nc,nr> & A,
+			  const Eigen::Matrix<number,nr,1> & rhs,
 			  const number accuracy)
 {
   auto itm = 0. ;
   auto itt = 0u ;
   while(true)
     {
-      blaze::StaticVector<number,nr> x{},res{};
-
+      Eigen::Matrix<number,nr,1> x{},res{};
+      x.setZero();
+      res.setZero();
       if constexpr (rnd)
 	{
 	  std::uniform_real_distribution<double> unif(0.,1.);
@@ -239,14 +249,14 @@ constexpr auto richardson(const blaze::StaticMatrix<number,nc,nr> & A,
 	}
       
       res = rhs - A*x;                                    //                f - A x
-      number initial_norm = blaze::norm(res) ;
+      number initial_norm = res.norm() ;
       number norm = 1. ;
       auto it = 0u;
       const Multigrid M(A,make_restriction(A));
       while (true)
 	{
 	  res = rhs - A*x;                                //                f - A x
-	  norm = blaze::norm(res) ;                       //             \| f - A x \|
+	  norm = res.norm() ;                       //             \| f - A x \|
 	  if constexpr (prt) std::cout.precision(3);
 	  if constexpr (prt) std::cout << "\rN:" << nr/2 << "\tIteration: "<< it << "\t"
 	  			       << initial_norm << " \u2192 " << norm << " "
@@ -274,27 +284,26 @@ constexpr auto richardson(const blaze::StaticMatrix<number,nc,nr> & A,
   if constexpr (rndtest) return 0;
 }
 
-
-template <std::size_t nel,typename number=double>
+template <int nel,typename number=double>
 constexpr auto mymain()
 {
   return richardson<2*nel,2*nel,false>(assemble<nel>(1.2,1.),assemble_rhs<nel>(),1.E-8) ;
 }
 
-template <std::size_t N, std::size_t ...Is>
-constexpr auto make_main_impl(const std::index_sequence<Is...>)
+template <int N, int ...Is>
+constexpr auto make_main_impl(const std::integer_sequence<int,Is...>)
 {
   return std::make_tuple(mymain<(N >> Is)>()...);
 }
 
-template <std::size_t N,typename number=double>
+template <int N,typename number=double>
 constexpr auto make_main()
 {
-  return make_main_impl<N>(std::make_index_sequence<logg2(N) - 1>());
+  return make_main_impl<N>(std::make_integer_sequence<int,logg2(N) - 1>());
 }
 
 int main(int argc, char *argv[])
 {
-  const volatile auto x = make_main<256>();
+  const volatile auto x = make_main<256>();  
   return 0;
 }

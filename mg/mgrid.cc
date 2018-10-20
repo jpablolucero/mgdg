@@ -168,7 +168,6 @@ constexpr auto make_restriction(const std::array<std::array<number,N>,N>&)
   return make_restriction_impl<N/2>(std::make_index_sequence<logg2(N/2) - 1>());
 }
 
-
 template <std::size_t n,typename number=double>
 constexpr std::array<std::array<number,n>,2*n> prolongate_matrix()
 {
@@ -382,7 +381,7 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
 	   			       << std::scientific << std::flush;
 	  if (norm/initial_norm < accuracy) break;        // break
 	  ++it ;
-	  sadd(x,M.template vcycle<nr/2,1,1,prt>
+	  sadd(x,M.template vcycle<2,1,2,prt>
 	       (std::forward<typename std::remove_reference<decltype(A)>::type>(A),
 		std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
 	                                                  // x_1 = x_0 + B (f - A x_0)
@@ -397,12 +396,11 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
       ++itt ;
       itm = itm * static_cast<double>(itt-1) / static_cast<double>(itt) +
       	static_cast<double>(it) / static_cast<double>(itt) ;
-      if constexpr (prt) std::cout.precision(5);
+      if constexpr (prt) std::cout.precision(3);
       if constexpr (prt) std::cout << "\rIterations: "<< itm << std::flush ;
     }
   if constexpr (rndtest) return 0;
 }
-
 
 template <std::size_t nel,typename number=double>
 constexpr auto mymain()
@@ -424,7 +422,6 @@ constexpr auto make_main()
 
 int main(int argc, char *argv[])
 {
-  // const volatile auto x = make_main<4>();
-  const volatile auto x = mymain<8>();
+  const volatile auto x = make_main<256>();
   return 0;
 }
