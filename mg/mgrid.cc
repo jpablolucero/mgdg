@@ -216,15 +216,17 @@ class Multigrid
 {
 public:
   
-  constexpr Multigrid(const std::array<std::array<number,N>,N>&,
+  constexpr Multigrid(const std::array<std::array<number,N>,N> && A_,
 		      const Restriction && rest_,
 		      const Prolongation && prol_):
+    A(std::forward<const std::array<std::array<number,N>,N> & >(A_)),
     rest(std::forward<const Restriction>(rest_)),
     prol(std::forward<const Prolongation>(prol_))
   {}
 
 private:
-  
+
+  const std::array<std::array<number,N>,N> & A;
   const Restriction rest ;
   const Prolongation prol ;
 
@@ -348,6 +350,16 @@ public:
 	return x ;
       }
   }
+
+  template <bool prt=true>
+  constexpr auto solve(const std::array<number,N> && res, double rlx = 1.) const
+  {
+    return vcycle<2,1,2,prt>
+      (std::forward<typename std::remove_reference<decltype(A)>::type>(A),
+       std::forward<typename std::remove_reference<decltype(res)>::type>(res),
+       rlx);
+  }
+
 };
 
 template <std::size_t nr, std::size_t nc, bool rnd = true, bool prt=true, bool rndtest=false,
@@ -371,7 +383,8 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
       
       sadd(res,rhs);
       sadd(res,A*x,-1.);                                  //                f - A x
-      const Multigrid M(A,make_restriction(A),make_prolongation(A));
+      const Multigrid M(std::forward<typename std::remove_reference<decltype(A)>::type>(A),
+			make_restriction(A),make_prolongation(A));
       number initial_norm = std::sqrt(res*res) ;
       number norm = 1. ;
       auto it = 0u;
@@ -386,9 +399,8 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
 	   			       << std::scientific << std::flush;
 	  if (norm/initial_norm < accuracy) break;        // break
 	  ++it ;
-	  sadd(x,M.template vcycle<2,1,2,prt>
-	       (std::forward<typename std::remove_reference<decltype(A)>::type>(A),
-		std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
+	  sadd(x,M.template
+	       solve(std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
 	                                                  // x_1 = x_0 + B (f - A x_0)
 	}
       

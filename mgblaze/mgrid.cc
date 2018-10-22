@@ -113,13 +113,15 @@ class Multigrid
 {
 public:
   
-  constexpr Multigrid(const blaze::StaticMatrix<number,N,N>&,
+  constexpr Multigrid(const blaze::StaticMatrix<number,N,N> && A_,
 		      const Restriction && rest_):
+    A(std::forward<const blaze::StaticMatrix<number,N,N> & >(A_)),
     rest(std::forward<const Restriction>(rest_))
   {}
 
 private:
   
+  const blaze::StaticMatrix<number,N,N> & A ;
   const Restriction rest ;
 
 public:
@@ -224,6 +226,16 @@ public:
 	return x ;
       }
   }
+
+  template <bool prt=true>
+  constexpr auto solve(const blaze::StaticVector<number,N> && res, double rlx = 1.) const
+  {
+    return vcycle<2,1,2,prt>
+      (std::forward<typename std::remove_reference<decltype(A)>::type>(A),
+       std::forward<typename std::remove_reference<decltype(res)>::type>(res),
+       rlx);
+  }
+
 };
 
 template <std::size_t nr, std::size_t nc, bool rnd = true, bool prt=true, bool rndtest=false,
@@ -249,7 +261,8 @@ constexpr auto richardson(const blaze::StaticMatrix<number,nc,nr> & A,
       number initial_norm = blaze::norm(res) ;
       number norm = 1. ;
       auto it = 0u;
-      const Multigrid M(A,make_restriction(A));
+      const Multigrid M(std::forward<typename std::remove_reference<decltype(A)>::type>(A),
+			make_restriction(A));
       while (true)
 	{
 	  res = rhs - A*x;                                //                f - A x
@@ -260,9 +273,8 @@ constexpr auto richardson(const blaze::StaticMatrix<number,nc,nr> & A,
 	   			       << std::scientific << std::flush;
 	  if (norm/initial_norm < accuracy) break;        // break
 	  ++it ;
-	  x += M.template vcycle<2,1,2,prt>
-	    (std::forward<typename std::remove_reference<decltype(A)>::type>(A),
-	     std::forward<typename std::remove_reference<decltype(res)>::type>(res));
+	  x += M.template
+	    solve(std::forward<typename std::remove_reference<decltype(res)>::type>(res));
 	                                                  // x_1 = x_0 + B (f - A x_0)
 	}
       
