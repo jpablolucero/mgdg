@@ -400,7 +400,7 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
 	  if (norm/initial_norm < accuracy) break;        // break
 	  ++it ;
 	  sadd(x,M.template
-	       solve(std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
+	       solve<prt>(std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
 	                                                  // x_1 = x_0 + B (f - A x_0)
 	}
       
