@@ -90,41 +90,41 @@ constexpr Eigen::Matrix<number,N,2*N> restrict_matrix()
 {
   Eigen::Matrix<number,N,2*N> R{};
   R.setZero() ;
-  if (p == 1)
+  for (auto k = 0u ; k < N ; k += p + 1)
     {
-      R(0,0) = 1.;
-      R(0,1) = 0.5;
-      R(1,1) = 0.5;
-      R(0,2) = 0.5;
-      R(1,2) = 0.5;
-
-      auto i = 1u;
-      for (auto j=3u;j<2*N-3;j+=4)
+      bool avg = false ;
+      std::size_t j = k ;
+      for (auto i = 2*k ; i < 2*k+p+1 ; ++i)
 	{
-	  R(i,j) = 1.;
-	  R(i+1,j+1) = 1.;
-	  if (j<2*N-3)
+	  if (avg)
 	    {
-	      R(i+1,j+2) = 0.5;
-	      R(i+2,j+2) = 0.5;
-	      R(i+1,j+3) = 0.5;
-	      R(i+2,j+3) = 0.5;
+	      R(j,i) = 0.5 ;
+	      R(j+1,i) = 0.5 ;
+	      j += 1 ;
+	      avg = false ;
 	    }
-	  i+=2;
+	  else
+	    {
+	      R(j,i) = 1. ;
+	      avg = true ;
+	    }
 	}
-      R(N-1,2*N-1) = 1.;
-    }
-  else
-    {
-      auto n = N/(p + 1) ;
-      for (auto j = 0 ; j < n ; ++j)
-	for (auto i = 0 ; i < p ; ++i)
-	  {
-	    R(0+i+j*(p+1),0+i*(p+1)+2*j*(p+1)) = 1.;
-	    R(0+i+j*(p+1),1+i*(p+1)+2*j*(p+1)) = 0.5;
-	    R(1+i+j*(p+1),1+i*(p+1)+2*j*(p+1)) = 0.5;
-	    R(1+i+j*(p+1),2+i*(p+1)+2*j*(p+1)) = 1.;
-	  }
+      if (avg) avg = false ; else { avg = true ; j -= 1 ; }
+      for (auto i = 2*k+p+1 ; i < 2*k+2*(p+1) ; ++i)
+	{
+	  if (avg)
+	    {
+	      R(j,i) = 0.5 ;
+	      R(j+1,i) = 0.5 ;
+	      j += 1 ;
+	      avg = false ;
+	    }
+	  else
+	    {
+	      R(j,i) = 1. ;
+	      avg = true ;
+	    }
+	}
     }
 
   return R;
@@ -133,7 +133,7 @@ constexpr Eigen::Matrix<number,N,2*N> restrict_matrix()
 template <int N,int p=1,int ...Is>
 constexpr auto make_restriction_impl(const std::integer_sequence<int,Is...>)
 {
-  return std::make_tuple(restrict_matrix<(N >> Is),p>()...);
+  return std::make_tuple(restrict_matrix<(N >> Is) * (p + 1) / 2,p>()...);
 }
 
 template <int N,int p=1,typename number=double>
@@ -176,8 +176,9 @@ public:
 	  {
 	    resq = res - A*q;
 	    norm = resq.norm() ;
-	    if (norm < 1.E-12) break ;      
-	    q += A.inverse() * resq ;
+	    if (norm < 1.E-12) break ;
+	    Eigen::FullPivLU<Eigen::Matrix<number,nr,nc> > lu(A) ;
+	    q += lu.inverse() * resq ;
 	  }
 	return q;
       }
@@ -238,7 +239,7 @@ public:
 
 	if constexpr (prt) std::cout << nr/(p + 1) << std::flush;
 	if constexpr (prt and (s>1)) std::cout << "(" << s << ")" << std::flush ;
-
+	
 	for (auto sit = 0;sit<s;++sit)
 	  x += rlx * B * (res - A*x);                       //    x_1 = x_0 + B (g - A x_0)
 
@@ -305,26 +306,25 @@ constexpr auto richardson(const Eigen::Matrix<number,nc,nr> & A,
       number norm = 1. ;
       auto it = 0u;
       const Multigrid M(std::forward<typename std::remove_reference<decltype(A)>::type>(A),
-			make_restriction<nc,p>());
+			make_restriction<2 * nc/(p + 1),p>());
       while (true)
-	{
-	  res = rhs - A*x;                                //                f - A x
-	  norm = res.norm() ;                             //             \| f - A x \|
-	  if constexpr (prt) std::cout.precision(3);
-	  if constexpr (prt) std::cout << "\rN:" << std::left << std::setw(5) << nr/(p+1)
-				       << "p:" << std::left << std::setw(3) << p
-				       << std::flush ;
-	  if constexpr (prt) std::cout << " Iteration: " << std::left << std::setw(7)
-				       << it << std::flush;
-	  if constexpr (prt) std::cout << initial_norm << " \u2192 " << norm << " "
-	   			       << std::scientific << std::flush ;
-	  if (norm/initial_norm < accuracy) break;        // break
-
-	  ++it ;
-	  x += M.template
-	    solve<p,prt>(std::forward<typename std::remove_reference<decltype(res)>::type>(res));
-	                                                  // x_1 = x_0 + B (f - A x_0)
-	}
+      	{
+      	  res = rhs - A*x;                                //                f - A x
+      	  norm = res.norm() ;                             //             \| f - A x \|
+      	  if constexpr (prt) std::cout.precision(3);
+      	  if constexpr (prt) std::cout << "\rN:" << std::left << std::setw(5) << nr/(p+1)
+      				       << "p:" << std::left << std::setw(3) << p
+      				       << std::flush ;
+      	  if constexpr (prt) std::cout << " Iteration: " << std::left << std::setw(7)
+      				       << it << std::flush;
+      	  if constexpr (prt) std::cout << initial_norm << " \u2192 " << norm << " "
+      	   			       << std::scientific << std::flush ;
+      	  if (norm/initial_norm < accuracy) break;        // break
+      	  ++it ;
+      	  x += M.template
+      	    solve<p,prt>(std::forward<typename std::remove_reference<decltype(res)>::type>(res));
+      	                                                  // x_1 = x_0 + B (f - A x_0)
+      	}
       
       if constexpr (!rndtest)
       		     {
@@ -419,7 +419,7 @@ constexpr auto make_main()
 
 int main(int argc, char *argv[])
 {
-  const volatile auto x = make_main<128,2>();
+  const volatile auto x = make_main<128,3>();
   
   return 0;
 }

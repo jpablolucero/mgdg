@@ -21,7 +21,8 @@ constexpr auto block_jacobi(const Eigen::Matrix<number,N,N>& A)
 		   for (auto i = 0u ; i < Ns ; ++i)
 		     for (auto j = 0u ; j < Ns ; ++j)
 		       B0(i,j) = A(i,j) ;
-		   const auto tmp = B0.inverse() ;
+		   Eigen::FullPivLU<Eigen::Matrix<number,Ns,Ns> > lu(B0); 
+		   const auto tmp = lu.inverse() ;
 		   for (auto i = 0u ; i < Ns ; ++i)
 		     for (auto j = 0u ; j < Ns ; ++j)
 		       J(i,j) = tmp(i,j) ;
@@ -34,7 +35,8 @@ constexpr auto block_jacobi(const Eigen::Matrix<number,N,N>& A)
       for (auto i = Ns ; i < Ns + Nb ; ++i)
 	for (auto j = Ns ; j < Ns + Nb ; ++j)
 	  B1(i - Ns,j - Ns) = A(b*Nb+i,b*Nb+j) ;
-      const auto tmp = B1.inverse() ;
+      Eigen::FullPivLU<Eigen::Matrix<number,Nb,Nb> > lu(B1); 
+      const auto tmp = lu.inverse() ;
       for (auto i = Ns ; i < Ns + Nb ; ++i)
 	for (auto j = Ns ; j < Ns + Nb ; ++j)
 	  J(b*Nb+i,b*Nb+j) = tmp(i - Ns,j - Ns) ;
@@ -45,7 +47,8 @@ constexpr auto block_jacobi(const Eigen::Matrix<number,N,N>& A)
   for (auto i = N - (Nb - Ns) ; i < N ; ++i)
     for (auto j = N - (Nb - Ns) ; j < N ; ++j)
       B2(i - (N - (Nb - Ns)),j - (N - (Nb - Ns))) = A(i,j) ;
-  const auto tmp = B2.inverse();
+  Eigen::FullPivLU<Eigen::Matrix<number,Nb-Ns,Nb-Ns> > lu(B2); 
+  const auto tmp = lu.inverse() ;
   for (auto i = N - (Nb - Ns) ; i < N ; ++i)
     for (auto j = N - (Nb - Ns) ; j < N ; ++j)
       J(i,j) = tmp(i - (N - (Nb - Ns)),j - (N - (Nb - Ns))) ;

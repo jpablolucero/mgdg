@@ -108,41 +108,41 @@ template <std::size_t N,std::size_t p=1,typename number=double>
 constexpr std::array<std::array<number,2*N>,N> restrict_matrix()
 {
   std::array<std::array<number,2*N>,N> R{};
-  if (p == 1)
+  for (auto k = 0u ; k < N ; k += p + 1)
     {
-      R[0][0] = 1.;
-      R[0][1] = 0.5;  
-      R[1][1] = 0.5;  
-      R[0][2] = 0.5;  
-      R[1][2] = 0.5;
-  
-      auto i = 1u;
-      for (auto j=3u;j<2*N-3;j+=4)
+      bool avg = false ;
+      std::size_t j = k ;
+      for (auto i = 2*k ; i < 2*k+p+1 ; ++i)
 	{
-	  R[i][j] = 1.;
-	  R[i+1][j+1] = 1.;
-	  if (j<2*N-3)
+	  if (avg)
 	    {
-	      R[i+1][j+2] = 0.5;  
-	      R[i+2][j+2] = 0.5;  
-	      R[i+1][j+3] = 0.5;  
-	      R[i+2][j+3] = 0.5;
+	      R[j][i] = 0.5 ;
+	      R[j+1][i] = 0.5 ;
+	      j += 1 ;
+	      avg = false ;
 	    }
-	  i+=2;
+	  else
+	    {
+	      R[j][i] = 1. ;
+	      avg = true ;
+	    }
 	}
-      R[N-1][2*N-1] = 1.;
-    }
-  else
-    {
-      auto n = N/(p + 1) ;
-      for (auto j = 0 ; j < n ; ++j)
-	for (auto i = 0 ; i < p ; ++i)
-	  {
-	    R[0+i+j*(p+1)][0+i*(p+1)+2*j*(p+1)] = 1.;
-	    R[0+i+j*(p+1)][1+i*(p+1)+2*j*(p+1)] = 0.5;
-	    R[1+i+j*(p+1)][1+i*(p+1)+2*j*(p+1)] = 0.5;
-	    R[1+i+j*(p+1)][2+i*(p+1)+2*j*(p+1)] = 1.;
-	  }
+      if (avg) avg = false ; else { avg = true ; j -= 1 ; }
+      for (auto i = 2*k+p+1 ; i < 2*k+2*(p+1) ; ++i)
+	{
+	  if (avg)
+	    {
+	      R[j][i] = 0.5 ;
+	      R[j+1][i] = 0.5 ;
+	      j += 1 ;
+	      avg = false ;
+	    }
+	  else
+	    {
+	      R[j][i] = 1. ;
+	      avg = true ;
+	    }
+	}
     }
   return R;
 }
@@ -150,7 +150,7 @@ constexpr std::array<std::array<number,2*N>,N> restrict_matrix()
 template <std::size_t N,std::size_t p=1,std::size_t ...Is>
 constexpr auto make_restriction_impl(const std::index_sequence<Is...>)
 {
-  return std::make_tuple(restrict_matrix<(N >> Is),p>()...);
+  return std::make_tuple(restrict_matrix<(N >> Is) * (p + 1) / 2,p>()...);
 }
 
 template <std::size_t N,std::size_t p=1,typename number=double>
@@ -163,42 +163,41 @@ template <std::size_t N,std::size_t p=1,typename number=double>
 constexpr std::array<std::array<number,N>,2*N> prolongate_matrix()
 {
   std::array<std::array<number,N>,2*N> RT{};
-  if (p == 1)
+  for (auto k = 0u ; k < N ; k += p + 1)
     {
-      auto n = N ;
-      RT[0][0] = 1.;
-      RT[1][0] = 0.5;  
-      RT[1][1] = 0.5;  
-      RT[2][0] = 0.5;  
-      RT[2][1] = 0.5;
-  
-      auto i = 1u;
-      for (auto j=3u;j<2*n-3;j+=4)
+      bool avg = false ;
+      std::size_t j = k ;
+      for (auto i = 2*k ; i < 2*k+p+1 ; ++i)
 	{
-	  RT[j][i] = 1.;
-	  RT[j+1][i+1] = 1.;
-	  if (j<2*n-3)
+	  if (avg)
 	    {
-	      RT[j+2][i+1] = 0.5;  
-	      RT[j+2][i+2] = 0.5;  
-	      RT[j+3][i+1] = 0.5;  
-	      RT[j+3][i+2] = 0.5;
+	      RT[i][j] = 0.5 ;
+	      RT[i][j+1] = 0.5 ;
+	      j += 1 ;
+	      avg = false ;
 	    }
-	  i+=2;
+	  else
+	    {
+	      RT[i][j] = 1. ;
+	      avg = true ;
+	    }
 	}
-      RT[2*n-1][n-1] = 1.;
-    }
-  else
-    {
-      auto n = N/(p + 1) ;
-      for (auto j = 0 ; j < n ; ++j)
-	for (auto i = 0 ; i < p ; ++i)
-	  {
-	    RT[0+i*(p+1)+2*j*(p+1)][0+i+j*(p+1)] = 1.;
-	    RT[1+i*(p+1)+2*j*(p+1)][0+i+j*(p+1)] = 0.5;
-	    RT[1+i*(p+1)+2*j*(p+1)][1+i+j*(p+1)] = 0.5;
-	    RT[2+i*(p+1)+2*j*(p+1)][1+i+j*(p+1)] = 1.;
-	  }
+      if (avg) avg = false ; else { avg = true ; j -= 1 ; }
+      for (auto i = 2*k+p+1 ; i < 2*k+2*(p+1) ; ++i)
+	{
+	  if (avg)
+	    {
+	      RT[i][j] = 0.5 ;
+	      RT[i][j+1] = 0.5 ;
+	      j += 1 ;
+	      avg = false ;
+	    }
+	  else
+	    {
+	      RT[i][j] = 1. ;
+	      avg = true ;
+	    }
+	}
     }
   return RT;
 }
@@ -206,7 +205,7 @@ constexpr std::array<std::array<number,N>,2*N> prolongate_matrix()
 template <std::size_t N,std::size_t p=1,std::size_t ...Is>
 constexpr auto make_prolongation_impl(const std::index_sequence<Is...>)
 {
-  return std::make_tuple(prolongate_matrix<(N >> Is),p>()...);
+  return std::make_tuple(prolongate_matrix<(N >> Is) * (p + 1) / 2,p>()...);
 }
 
 template <std::size_t N,std::size_t p=1,typename number=double>
@@ -252,7 +251,7 @@ public:
 	    resq = res ;                                                       
 	    sadd(resq,A*q,-1.) ;       
 	    norm = std::sqrt(resq*resq) ;
-	    if (norm < 1.E-12) break ;      
+	    if (norm < 1.E-12) break ;
 	    sadd(q,invert(A)*resq) ;
 	  }
 	return q;
@@ -329,13 +328,13 @@ public:
 	    sadd(g,A*x,-1.);                       //                   g - A x_0
 	    sadd(x,B*g,rlx);                       //    x_1 = x_0 + B (g - A x_0)
 	  }
+
 	if constexpr (prt) std::cout << " \u2198 " << std::flush;
       
 	g = res ;                        //                             g
 	sadd(g,A*x,-1.);                 //                             g - A x_1
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	const auto & RT = std::get<logg2(N/nr)-1>(prol);
-
 	sadd(x,RT*
 	     vcycle
 	     <p,n0,m*s,m,t,prt>(std::forward
@@ -383,45 +382,46 @@ constexpr auto richardson(const std::array<std::array<number,nc>,nr> & A,
       std::array<number,nr> x{},res{};
 
       if constexpr (rnd)
-	{
-	  std::uniform_real_distribution<double> unif(0.,1.);
-	  std::random_device re;
-	  for (auto & el : x) el = unif(re);
-	}
+  	{
+  	  std::uniform_real_distribution<double> unif(0.,1.);
+  	  std::random_device re;
+  	  for (auto & el : x) el = unif(re);
+  	}
 
       sadd(res,rhs);
       sadd(res,A*x,-1.);                                  //                f - A x
       const Multigrid M(std::forward<typename std::remove_reference<decltype(A)>::type>(A),
-			make_restriction<nc,p>(),make_prolongation<nc,p>());
+      			make_restriction<2 * nc/(p + 1),p>(),make_prolongation<2 * nc/(p + 1),p>());
+
       number initial_norm = std::sqrt(res*res) ;
       number norm = 1. ;
       auto it = 0u;
+      
       while (true)
-	{
-	  res = rhs ;                                     //                f
-	  sadd(res,A*x,-1.);                              //                f - A x
-	  norm = std::sqrt(res*res) ;                     //             \| f - A x \|
-	  if constexpr (prt) std::cout.precision(3);
-	  if constexpr (prt) std::cout << "\rN:" << std::left << std::setw(5) << nr/(p+1)
-	  			       << "p:" << std::left << std::setw(3) << p
-	  			       << std::flush ;
-	  if constexpr (prt) std::cout << " Iteration: " << std::left << std::setw(7)
-	  			       << it << std::flush;
-	  if constexpr (prt) std::cout << initial_norm << " \u2192 " << norm << " "
-	   			       << std::scientific << std::flush ;
-	  if (norm/initial_norm < accuracy) break;        // break
-
-	  ++it ;
-	  sadd(x,M.template
-	       solve<p,prt>(std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
-	                                                  // x_1 = x_0 + B (f - A x_0)
-	}
+      	{
+      	  res = rhs ;                                     //                f
+      	  sadd(res,A*x,-1.);                              //                f - A x
+      	  norm = std::sqrt(res*res) ;                     //             \| f - A x \|
+      	  if constexpr (prt) std::cout.precision(3);
+      	  if constexpr (prt) std::cout << "\rN:" << std::left << std::setw(5) << nr/(p+1)
+      	  			       << "p:" << std::left << std::setw(3) << p
+      	  			       << std::flush ;
+      	  if constexpr (prt) std::cout << " Iteration: " << std::left << std::setw(7)
+      	  			       << it << std::flush;
+      	  if constexpr (prt) std::cout << initial_norm << " \u2192 " << norm << " "
+      	   			       << std::scientific << std::flush ;
+      	  if (norm/initial_norm < accuracy) break;        // break
+      	  ++it ;
+      	  sadd(x,M.template
+      	       solve<p,prt>(std::forward<typename std::remove_reference<decltype(res)>::type>(res)));
+      	                                                  // x_1 = x_0 + B (f - A x_0)
+      	}
       
       if constexpr (!rndtest)
       		     {
       		       if constexpr (prt) std::cout << std::endl ;
-		       return x;
-		     }
+  		       return x;
+  		     }
       
       ++itt ;
       itm = itm * static_cast<double>(itt-1) / static_cast<double>(itt) +
@@ -453,7 +453,7 @@ constexpr auto make_main()
 
 int main(int argc, char *argv[])
 {
-  const volatile auto x = make_main<128,2>();
+  const volatile auto x = make_main<256,3>();
   
   return 0;
 }
