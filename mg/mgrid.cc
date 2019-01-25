@@ -309,7 +309,7 @@ public:
 	    sadd(resq,A*q,-1.) ;       
 	    norm = std::sqrt(resq*resq) ;
 	    if (norm < 1.E-12) break ;
-	    sadd(q,vcycle0<p,n0,1,2>
+	    sadd(q,vcycle0<p,p+1,1,2>
 		 (std::forward<typename std::remove_reference<decltype(A)>::type>(A),
 		  std::forward<typename std::remove_reference<decltype(resq)>::type>(resq)));
 	  }

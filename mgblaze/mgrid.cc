@@ -217,7 +217,7 @@ public:
 	    resq = res - A*q;
 	    norm = blaze::norm(resq) ;
 	    if (norm < 1.E-12) break ;
-	    q += vcycle0<p,n0,1,2>
+	    q += vcycle0<p,p+1,1,2>
 	      (std::forward<typename std::remove_reference<decltype(A)>::type> (A),
 	       std::forward<typename std::remove_reference<decltype(resq)>::type>(resq));
 	  }
