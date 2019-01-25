@@ -8,7 +8,7 @@ import lobatto as lo
 x,h,d,e,w,w0,a,b,c,f,g,p = sy.symbols('x h d e w w0 a b c f g p')
 
 Dom = 1.
-n = 16
+n = 4
 p = 1
 
 [xtab,weights] = lo.lobatto_compute(p+1)
@@ -85,25 +85,24 @@ mp.xlabel("x")
 mp.ylabel("u(x)")
 x = np.linalg.pinv(Lp) * f
 mp.plot(g,(np.array(x)).transpose()[0])
-# mp.show()
+mp.show()
 
-# D = sy.Matrix(sy.zeros((p + 1)*n,(p + 1)*n))
-# for b in range(n):
-#     for i in range((p + 1)):
-#         for j in range((p + 1)):
-#             D[(p + 1)*b+i,(p + 1)*b+j] = A[(p + 1)*b+i,(p + 1)*b+j]
-
-
-s = int((p + 1)/2)
 D = sy.Matrix(sy.zeros((p + 1)*n,(p + 1)*n))
-for i in range(s):
-    for j in range(s):
-        D[i,j] = Lp[i,j]
-        D[(p + 1)*n-1-i,(p + 1)*n-1-j] = Lp[(p + 1)*n-1-i,(p + 1)*n-1-j]
-for b in range(1,n):
+for b in range(n):
     for i in range((p + 1)):
         for j in range((p + 1)):
-            D[(p + 1)*b+i-s,(p + 1)*b+j-s] = Lp[(p + 1)*b+i-s,(p + 1)*b+j-s]
+            D[(p + 1)*b+i,(p + 1)*b+j] = A[(p + 1)*b+i,(p + 1)*b+j]
+
+# s = int((p + 1)/2)
+# D = sy.Matrix(sy.zeros((p + 1)*n,(p + 1)*n))
+# for i in range(s):
+#     for j in range(s):
+#         D[i,j] = Lp[i,j]
+#         D[(p + 1)*n-1-i,(p + 1)*n-1-j] = Lp[(p + 1)*n-1-i,(p + 1)*n-1-j]
+# for b in range(1,n):
+#     for i in range((p + 1)):
+#         for j in range((p + 1)):
+#             D[(p + 1)*b+i-s,(p + 1)*b+j-s] = Lp[(p + 1)*b+i-s,(p + 1)*b+j-s]
 
 RT = sy.Matrix(sy.zeros((p + 1)*n,((p + 1)*n)/2))
 for k in range(0,int(((p + 1)*n)/2),p + 1):
