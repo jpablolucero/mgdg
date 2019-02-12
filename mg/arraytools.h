@@ -5,37 +5,90 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <algorithm>
 
 template <std::size_t nr, typename number=double>
-constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,number>::type
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+operator *(const number x, const std::array<number,nr> & y)
+{
+  std::array<number,nr> res{};
+  int par = (nr >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(y,res)
+  #endif
+  for (auto i=0u;i<nr;++i)
+    res[i] = x*y[i];
+  return res ;
+}
+
+template <std::size_t nr, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,number>::type
 operator *(const std::array<number,nr> & x, const std::array<number,nr> & y)
 {
   number res = 0.;
+  int par = (nr >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) reduction(+:res) default(none) shared(x,y)
+  #endif
   for (auto i=0u;i<x.size();++i)
     res += x[i]*y[i];
   return res ;
 }
 
+template <std::size_t nr, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+operator -(const std::array<number,nr> & x, const std::array<number,nr> & y)
+{
+  std::array<number,nr> res{};
+  int par = (nr >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(x,y,res)
+  #endif
+  for (auto i=0u;i<x.size();++i)
+    res[i] = x[i] - y[i];
+  return res ;
+}
+
+template <std::size_t nr, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+operator +(const std::array<number,nr> & x, const std::array<number,nr> & y)
+{
+  std::array<number,nr> res{};
+  int par = (nr >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(x,y,res)
+  #endif
+  for (auto i=0u;i<nr;++i)
+    res[i] = x[i] + y[i];
+  return res ;
+}
+
 template <std::size_t nr, std::size_t nc, typename number=double>
-constexpr
-inline typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
 operator *(const std::array<std::array<number,nc>,nr> & A,const std::array<number,nc> & x)
 {
   std::array<number,nr> res{} ;
-  for (auto i=0u;i<nr;++i)
-    for (auto j=0u;j<nc;++j)
+  int par = (nr >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(A,x,res)
+  #endif
+  for (auto i=0u;i<nr;i++)
+    for (auto j=0u;j<nc;j++)
       res[i] += A[i][j]*x[j];
   return res ;
 }
 
-template
-<std::size_t nrA, std::size_t ncA, std::size_t nrB, std::size_t ncB, typename number=double>
-constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,
+template <std::size_t nrA, std::size_t ncA, std::size_t nrB, std::size_t ncB, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
 				  std::array<std::array<number,ncB>,nrA> >::type
 operator *(const std::array<std::array<number,ncA>,nrA> & A,
 	   const std::array<std::array<number,ncB>,nrB> & B)
 {
   std::array<std::array<number,ncB>,nrA> res{} ;
+  int par = ((nrA >= 128) or (ncA >= 128) or (nrB >= 128) or (ncB >= 128)) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(A,B,res)
+  #endif
   for (auto k=0u;k<ncB;++k)
     for (auto i=0u;i<nrA;++i)
       for (auto j=0u;j<nrB;++j)      
@@ -43,59 +96,70 @@ operator *(const std::array<std::array<number,ncA>,nrA> & A,
   return res ;
 }
 
-template
-<std::size_t nrA, std::size_t ncA, typename number=double>
-constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,
-					 std::array<std::array<number,ncA>,nrA> >::type
+template <std::size_t nrA, std::size_t ncA, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<std::array<number,ncA>,nrA> >::type
 operator -(const std::array<std::array<number,ncA>,nrA> & A,
 	   const std::array<std::array<number,ncA>,nrA> & B)
 {
   std::array<std::array<number,ncA>,nrA> res{} ;
+  int par = ((nrA >= 128) or (ncA >= 128)) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(A,B,res)
+  #endif
   for (auto i=0u;i<nrA;++i)
     for (auto j=0u;j<nrA;++j)      
       res[i][j] = A[i][j] - B[i][j];
   return res ;
 }
 
-template
-<std::size_t nrA, std::size_t ncA, typename number=double>
-constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,
-					 std::array<std::array<number,ncA>,nrA> >::type
+template <std::size_t nrA, std::size_t ncA, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<std::array<number,ncA>,nrA> >::type
 operator +(const std::array<std::array<number,ncA>,nrA> & A,
 	   const std::array<std::array<number,ncA>,nrA> & B)
 {
   std::array<std::array<number,ncA>,nrA> res{} ;
+  int par = ((nrA >= 128) or (ncA >= 128)) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(A,B,res)
+  #endif
   for (auto i=0u;i<nrA;++i)
     for (auto j=0u;j<nrA;++j)      
       res[i][j] = A[i][j] + B[i][j];
   return res ;
 }
 
-template
-<std::size_t nrA, std::size_t ncA, typename number=double>
-constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,
-					 std::array<std::array<number,ncA>,nrA> >::type
+template <std::size_t nrA, std::size_t ncA, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<std::array<number,ncA>,nrA> >::type
 operator *(const std::array<std::array<number,ncA>,nrA> & A,
 	   const number B)
 {
   std::array<std::array<number,ncA>,nrA> res{} ;
+  int par = ((nrA >= 128) or (ncA >= 128)) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(A,res)
+  #endif
   for (auto i=0u;i<nrA;++i)
     for (auto j=0u;j<ncA;++j)      
-	res[i][j] += A[i][j] * B;
+	res[i][j] = A[i][j] * B;
   return res ;
 }
 
-template
-<std::size_t nrB, std::size_t ncB, typename number=double>
-constexpr inline typename std::enable_if<std::is_arithmetic<number>::value,
-					 std::array<std::array<number,ncB>,nrB> >::type
-operator *(const number A,
-	   const std::array<std::array<number,ncB>,nrB> & B)
+template <std::size_t nrB, std::size_t ncB, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<std::array<number,ncB>,nrB> >::type
+operator *(const number A,const std::array<std::array<number,ncB>,nrB> & B)
 {
   std::array<std::array<number,ncB>,nrB> res{} ;
+  int par = ((nrB >= 128) or (ncB >= 128)) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(B,res)
+  #endif
   for (auto i=0u;i<nrB;++i)
     for (auto j=0u;j<nrB;++j)      
-      res[i][j] += A * B[i][j];
+      res[i][j] = A * B[i][j];
   return res ;
 }
 
@@ -119,32 +183,8 @@ constexpr auto print(const std::array<number,n> & v)
   std::cout << std::endl ;
 }
 
-constexpr inline auto sadd = [](auto & out, const auto & in, const double factor=1.)
-{
-  for (auto i=0u;i<in.size();++i) out[i]+=factor*in[i];
-};
-
-// template <std::size_t nrA, std::size_t ncA, typename number=double>
-// constexpr std::array<std::array<number,ncA>,nrA>
-// invert(const std::array<std::array<number,ncA>,nrA> & A)
-// {
-//   std::array<std::array<number,ncA>,nrA> res{} ;
-//   Eigen::Matrix<number,static_cast<int>(nrA),static_cast<int>(nrA)> M{} ;
-//   for (auto i=0u;i<nrA;++i)
-//     for (auto j=0u;j<nrA;++j)
-//       M(i,j) = A[i][j];
-//   const auto Minv = M.inverse() ;
-//   for (auto i=0u;i<nrA;++i)
-//     for (auto j=0u;j<nrA;++j)      
-//       res[i][j] = Minv(i,j);
-//   return res ;
-// }
-
 template <typename number=double>
-constexpr auto invert(const std::array<std::array<number, 1>,1>& x)
-{
-  return std::array<std::array<number,1>,1>{std::array<number,1>{1./x[0][0]}};
-}
+constexpr auto invert(const std::array<std::array<number, 1>,1>& x);
 
 template <typename number=double>
 constexpr auto invert(const std::array<std::array<number,2>,2>& a) ;
@@ -164,6 +204,12 @@ constexpr auto block_inverse(const AA& A, const BB& B, const CC& C,
   const auto T = invS;
 
   return std::make_tuple(Q, R, S, T);
+}
+
+template <typename number=double>
+constexpr auto invert(const std::array<std::array<number, 1>,1>& x)
+{
+  return std::array<std::array<number,1>,1>{std::array<number,1>{1./x[0][0]}};
 }
 
 template <typename number=double>
@@ -215,7 +261,7 @@ constexpr auto invert(const std::array<std::array<number,N>,N>& a) {
   for (auto i=0u;i < N - N/2;++i)
     for (auto j=0u;j < N - N / 2;++j)
       res[i+N / 2][j+N / 2] = T[i][j] ;
-
+  /*
   std::array<std::array<number,N>,N> I{} ;
   for (auto i=0u;i < N;++i)
     I[i][i] = 1.;
@@ -227,15 +273,17 @@ constexpr auto invert(const std::array<std::array<number,N>,N>& a) {
       norm += std::abs(diff[i][j]);
 
   if (norm > 1.E-10) std::exit(1) ;
-  
+  */
   return res;
 }
 
 template <std::size_t Nb, std::size_t Ns=0, std::size_t N, typename number=double>
 constexpr auto block_jacobi(const std::array<std::array<number,N>,N>& A)
 {
+  if (Nb == N) return invert(A);
+  
   std::array<std::array<number,N>,N> J{} ;
-
+  
   if constexpr (Ns != 0)
 		 {
 		   std::array<std::array<number,Ns>,Ns> B0{} ;
@@ -247,27 +295,48 @@ constexpr auto block_jacobi(const std::array<std::array<number,N>,N>& A)
 		     for (auto j = 0u ; j < Ns ; ++j)
 		       J[i][j] = B0[i][j] ;
 		 }
-  
-  std::array<std::array<number,Nb>,Nb> B1{} ;
-  for (auto b = 0u ; b < N / Nb - 1; ++b)
-    {
-      for (auto i = Ns ; i < Ns + Nb ; ++i)
-	for (auto j = Ns ; j < Ns + Nb ; ++j)
-	  B1[i - Ns][j - Ns] = A[b*Nb+i][b*Nb+j] ;
-      B1 = invert(B1);
-      for (auto i = Ns ; i < Ns + Nb ; ++i)
-	for (auto j = Ns ; j < Ns + Nb ; ++j)
-	  J[b*Nb+i][b*Nb+j] = B1[i - Ns][j - Ns] ;
-    }
 
-  std::array<std::array<number,Nb-Ns>,Nb-Ns> B2{} ;
-  for (auto i = N - (Nb - Ns) ; i < N ; ++i)
-    for (auto j = N - (Nb - Ns) ; j < N ; ++j)
-      B2[i - (N - (Nb - Ns))][j - (N - (Nb - Ns))] = A[i][j] ;
+  std::array<std::array<number,Nb>,Nb> B1{} ;
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      B1[i - Ns][j - Ns] = A[i][j] ;
+  B1 = invert(B1);
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      J[i][j] = B1[i - Ns][j - Ns] ;
+
+  std::array<std::array<number,Nb>,Nb> B2{} ;
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      B2[i - Ns][j - Ns] = A[Nb+i][Nb+j] ;
   B2 = invert(B2);
+  
+  int par = (N >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(J,B2)
+  #endif
+  for (auto b = 1u ; b < (N / Nb - 2) ; ++b)
+    for (auto i = Ns ; i < Ns + Nb ; ++i)
+      for (auto j = Ns ; j < Ns + Nb ; ++j)
+	J[b*Nb+i][b*Nb+j] = B2[i - Ns][j - Ns] ;
+
+  std::array<std::array<number,Nb>,Nb> B3{} ;
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      B3[i - Ns][j - Ns] = A[(N / Nb - 2)*Nb+i][(N / Nb - 2)*Nb+j] ;
+  B3 = invert(B3);
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      J[(N / Nb - 2)*Nb+i][(N / Nb - 2)*Nb+j] = B3[i - Ns][j - Ns] ;
+
+  std::array<std::array<number,Nb-Ns>,Nb-Ns> B4{} ;
   for (auto i = N - (Nb - Ns) ; i < N ; ++i)
     for (auto j = N - (Nb - Ns) ; j < N ; ++j)
-      J[i][j] = B2[i - (N - (Nb - Ns))][j - (N - (Nb - Ns))] ;
+      B4[i - (N - (Nb - Ns))][j - (N - (Nb - Ns))] = A[i][j] ;
+  B4 = invert(B4);
+  for (auto i = N - (Nb - Ns) ; i < N ; ++i)
+    for (auto j = N - (Nb - Ns) ; j < N ; ++j)
+      J[i][j] = B4[i - (N - (Nb - Ns))][j - (N - (Nb - Ns))] ;
 
   return J ;
 }
