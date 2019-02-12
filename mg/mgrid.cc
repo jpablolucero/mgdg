@@ -88,10 +88,11 @@ constexpr auto logg2(const auto N)
 {
   auto res = 0u;
   auto n = N;
-  while (n != 0) {
-    n /= 2;
-    ++res;
-  }
+  while (n != 0)
+    {
+      n /= 2;
+      ++res;
+    }
   return res;
 }
 
@@ -428,7 +429,7 @@ constexpr auto richardson(const auto & A,const auto & rhs,const number accuracy)
       number initial_norm = std::sqrt(res*res) ;
       number norm = 1. ;
       auto it = 0u;
-      const auto M = make_multigrid<p,0,true,prt>(A);
+      const auto M = make_multigrid<p,0,false,prt>(A);
       const number rlx = 1. ;
       while (true)
       	{
@@ -485,7 +486,7 @@ constexpr auto gmres(const auto & AA,const auto & rrhs,const number accuracy)
 
       auto it = 0u;
 
-      const auto M = make_multigrid<p,(p+1)/2,false>(AA);
+      const auto M = make_multigrid<p,0,false>(AA);
       long int iterations = 100;
       long int & its = iterations;
       double tolerance = accuracy;
