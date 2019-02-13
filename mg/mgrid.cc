@@ -533,7 +533,7 @@ constexpr auto mymain()
 {
   const auto A = assemble<nel,p>(static_cast<number>(p*(p+1)),1.);
   const auto rhs = assemble_rhs<nel,p>([](double x){return M_PI*M_PI*std::sin(M_PI*x);},1.);
-  const auto solution = richardson<p,false,false>(A,rhs,1.E-8) ;
+  const auto solution = richardson<p,false>(A,rhs,1.E-8) ;
   // std::cout.precision(5);
   // std::cout << std::left << std::setw(12) << 1./static_cast<double>(nel)
   // 	    << l2error<nel,p>(solution,[](double x){return std::sin(M_PI*x);},1.)
@@ -555,6 +555,6 @@ constexpr auto make_main()
 
 int main(int argc,char *argv[])
 {
-  const volatile auto x1 = make_main<4,2>();
+  const volatile auto x1 = make_main<4,1>();
   return 0;
 }
