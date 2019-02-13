@@ -18,8 +18,8 @@ constexpr auto assemble(const number d=static_cast<number>(p*(p+1)),const number
 {
   std::array<std::array<number,p+1>,p+1> CM{},CM0{},CM1{},FM{};
   const auto h = L/static_cast<number>(n);
-  const auto f = make_lagrange<p>(h);
-  const auto basis = make_lagrange<p+1>(h);
+  const auto f = make_lagrange_basis<p>(h);
+  const auto basis = make_lagrange_basis<p+1>(h);
 
   for (auto i = 0u; i < p + 1; ++i)
     for (auto j = 0u; j < p + 1; ++j)
@@ -71,17 +71,35 @@ constexpr auto assemble(const number d=static_cast<number>(p*(p+1)),const number
 }
 
 template <std::size_t n,std::size_t p=1,typename number=double>
-constexpr auto assemble_rhs(const number L=1.)
+constexpr auto assemble_rhs(const auto & g,const number L=1.)
 {
   std::array<number,(p + 1)*n> rhs{} ;
   const auto h = L/static_cast<number>(n);
-  const auto f = make_lagrange<p>(h);
-  const auto basis = make_lagrange<p+1>(h);
+  const auto f = make_lagrange_basis<p>(h);
+  const auto basis = make_lagrange_basis<p+3>(h);
   for (auto b = 0u ; b < n ; ++b)
     for (auto i = 0u ; i < p + 1 ; ++i)
-      rhs[(p + 1)*b + i] = basis.integrate([&f,i](const number x){return f(i,x);});
+      rhs[(p + 1)*b + i] = basis.integrate([&f,&g,i,b,h,L](const number x){return f(i,x)*g(x+b*h);});
 	  
   return rhs;
+}
+
+template <std::size_t n,std::size_t p=1,typename number=double>
+constexpr auto l2error(const auto & solution,const auto & g,const number L=1.)
+{
+  const auto h = L/static_cast<number>(n);
+  const auto basis = make_lagrange_basis<p+3>(h);
+  number result = 0. ;
+  for (auto b = 0u ; b < n ; ++b)
+    {
+      std::array<number,(p + 1)> local_solution{} ;
+      for (auto i = 0u ; i < p + 1 ; ++i)
+	local_solution[i] = solution[(p + 1)*b + i] ;
+      const auto f = make_lagrange_proj<p>(h,local_solution);
+      result += basis.integrate
+	([&f,&g,b,h,L](const number x){return (f(x)-g(x+b*h))*(f(x)-g(x+b*h));});
+    }
+  return std::sqrt(result);
 }
 
 constexpr auto logg2(const auto N)
@@ -513,8 +531,14 @@ constexpr auto gmres(const auto & AA,const auto & rrhs,const number accuracy)
 template <std::size_t nel,std::size_t p=1,typename number=double>
 constexpr auto mymain()
 {
-  return richardson<p,false>
-    (assemble<nel,p>(static_cast<number>(p*(p+1)),1.),assemble_rhs<nel,p>(1.),1.E-8) ;
+  const auto A = assemble<nel,p>(static_cast<number>(p*(p+1)),1.);
+  const auto rhs = assemble_rhs<nel,p>([](double x){return M_PI*M_PI*std::sin(M_PI*x);},1.);
+  const auto solution = richardson<p,false,false>(A,rhs,1.E-8) ;
+  // std::cout.precision(5);
+  // std::cout << std::left << std::setw(12) << 1./static_cast<double>(nel)
+  // 	    << l2error<nel,p>(solution,[](double x){return std::sin(M_PI*x);},1.)
+  // 	    << std::scientific << std::endl << std::flush;
+  return solution;
 }
 
 template <std::size_t N,std::size_t p,std::size_t ...Is>
@@ -531,6 +555,6 @@ constexpr auto make_main()
 
 int main(int argc,char *argv[])
 {
-  const volatile auto x1  = mymain<4,2>();
+  const volatile auto x1 = make_main<4,2>();
   return 0;
 }

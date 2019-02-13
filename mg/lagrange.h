@@ -3,21 +3,30 @@
 
 #include <lobatto.h>
 
-template <std::size_t n>
+template <std::size_t n,bool projected=false>
 class LagrangeBasis
 {
 public:
 
   constexpr LagrangeBasis(const double h_) :
     h(h_),
-    paw(lobatto_compute<n>(h))
+    paw(lobatto_compute<n>(h)),
+    coeffs(std::array<double,n>())
   {}
 
+  constexpr LagrangeBasis(const double h_,const std::array<double,n> & coeffs_) :
+    h(h_),
+    paw(lobatto_compute<n>(h)),
+    coeffs(coeffs_)
+  {}
+  
   const double h ;
   const std::tuple<std::array<double,n>,
 		   std::array<double,n> > paw ;
+  const std::array<double,n> coeffs ;
 
-  constexpr double operator () (int i, double x) const {
+  constexpr double operator () (int i, double x) const
+  {
     const auto pts = std::get<0>(paw);
     double result = 1.;
     for (auto j=0u;j<n;++j)
@@ -25,7 +34,17 @@ public:
     return result ;
   }
 
-  constexpr double diff(int j, double x) const {
+  constexpr double operator () (double x) const
+  {
+    static_assert(projected,"The Lagrange basis has been instantiated without a coefficient vector, therefore, access is only granted to basis functions 'constexpr double LagrangeBasis::operator () (int i, double x) const'");
+    double result = 0.;
+    for (auto i=0u;i<n;++i)
+      result += coeffs[i]*(*this)(i,x);
+    return result;
+  }
+
+  constexpr double diff(int j, double x) const
+  {
     const auto pts = std::get<0>(paw);
     double sum = 0.;
     for (auto i = 0u ; i < n ; ++i)
@@ -42,7 +61,8 @@ public:
   }
   
   template <typename Integrand>
-  constexpr double integrate(const Integrand & f) const {
+  constexpr double integrate(const Integrand & f) const
+  {
     auto result = 0.;
     const auto pts = std::get<0>(paw);
     const auto wts = std::get<1>(paw);
@@ -54,9 +74,15 @@ public:
 }; 
 
 template <std::size_t p>
-constexpr auto make_lagrange(const double h)
+constexpr auto make_lagrange_basis(const double h)
 {
-  return LagrangeBasis<p+1>(h);
+  return LagrangeBasis<p+1,false>(h);
+}
+
+template <std::size_t p>
+constexpr auto make_lagrange_proj(const double h,const auto & coeffs)
+{
+  return LagrangeBasis<p+1,true>(h,coeffs);
 }
 
 #endif /* LAGRANGE_H */
