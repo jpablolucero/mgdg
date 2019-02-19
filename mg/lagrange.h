@@ -14,12 +14,18 @@ public:
     coeffs(std::array<double,n>())
   {}
 
+  constexpr LagrangeBasis(const LagrangeBasis& lag) :
+    h(lag.h),
+    paw(lag.paw),
+    coeffs(lag.coeffs)
+  {}
+  
   constexpr LagrangeBasis(const double h_,const std::array<double,n> & coeffs_) :
     h(h_),
     paw(lobatto_compute<n>(h)),
     coeffs(coeffs_)
   {}
-  
+
   const double h ;
   const std::tuple<std::array<double,n>,
 		   std::array<double,n> > paw ;

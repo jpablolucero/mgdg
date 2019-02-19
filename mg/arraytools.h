@@ -163,6 +163,12 @@ operator *(const number A,const std::array<std::array<number,ncB>,nrB> & B)
   return res ;
 }
 
+constexpr auto operator *(const auto & A,const auto & x)
+{
+  return A(x) ;
+}
+
+
 template <std::size_t nr, std::size_t nc, typename number=double>
 constexpr auto print(const std::array<std::array<number,nc>,nr> & A)
 {
@@ -177,6 +183,14 @@ constexpr auto print(const std::array<std::array<number,nc>,nr> & A)
 
 template <std::size_t n, typename number=double>
 constexpr auto print(const std::array<number,n> & v)
+{
+  for (const auto el : const_cast<std::array<number,n>& >(v))
+    std::cout << el << " " ;
+  std::cout << std::endl ;
+}
+
+template <std::size_t n, typename number=double>
+constexpr auto print(const volatile std::array<number,n> & v)
 {
   for (const auto el : const_cast<std::array<number,n>& >(v))
     std::cout << el << " " ;
@@ -319,6 +333,98 @@ constexpr auto block_jacobi(const std::array<std::array<number,N>,N>& A)
     for (auto i = Ns ; i < Ns + Nb ; ++i)
       for (auto j = Ns ; j < Ns + Nb ; ++j)
 	J[b*Nb+i][b*Nb+j] = B2[i - Ns][j - Ns] ;
+
+  std::array<std::array<number,Nb>,Nb> B3{} ;
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      B3[i - Ns][j - Ns] = A[(N / Nb - 2)*Nb+i][(N / Nb - 2)*Nb+j] ;
+  B3 = invert(B3);
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      J[(N / Nb - 2)*Nb+i][(N / Nb - 2)*Nb+j] = B3[i - Ns][j - Ns] ;
+
+  std::array<std::array<number,Nb-Ns>,Nb-Ns> B4{} ;
+  for (auto i = N - (Nb - Ns) ; i < N ; ++i)
+    for (auto j = N - (Nb - Ns) ; j < N ; ++j)
+      B4[i - (N - (Nb - Ns))][j - (N - (Nb - Ns))] = A[i][j] ;
+  B4 = invert(B4);
+  for (auto i = N - (Nb - Ns) ; i < N ; ++i)
+    for (auto j = N - (Nb - Ns) ; j < N ; ++j)
+      J[i][j] = B4[i - (N - (Nb - Ns))][j - (N - (Nb - Ns))] ;
+
+  return J ;
+}
+
+template <std::size_t N, typename number=double>
+constexpr auto invert(const auto& AA)
+{
+  std::array<std::array<number,N>,N> A{};
+  for (auto j = 0u ; j < N ; j++)
+    {
+      std::array<number,N> x{};
+      x[j] = 1. ;
+      const auto x1 = AA*x;
+      for (auto i = 0u ; i < N ; i ++)
+      	{
+      	  A[i][j] = x1[i] ;
+      	}
+    }
+  return invert(A);
+}
+
+template <std::size_t Nb, std::size_t Ns=0, std::size_t N, typename number=double>
+constexpr auto block_jacobi(const auto& AA)
+{
+  std::array<std::array<number,N>,N> A{};
+  for (auto j = 0u ; j < N ; j++)
+    {
+      std::array<number,N> x{};
+      x[j] = 1. ;
+      const auto x1 = AA*x;
+      for (auto i = 0u ; i < N ; i ++)
+      	{
+      	  A[i][j] = x1[i] ;
+      	}
+    }
+  if (Nb == N) return invert(A);
+  
+  std::array<std::array<number,N>,N> J{} ;
+  
+  if constexpr (Ns != 0)
+  		 {
+  		   std::array<std::array<number,Ns>,Ns> B0{} ;
+  		   for (auto i = 0u ; i < Ns ; ++i)
+  		     for (auto j = 0u ; j < Ns ; ++j)
+  		       B0[i][j] = A[i][j] ;
+  		   B0 = invert(B0);
+  		   for (auto i = 0u ; i < Ns ; ++i)
+  		     for (auto j = 0u ; j < Ns ; ++j)
+  		       J[i][j] = B0[i][j] ;
+  		 }
+
+  std::array<std::array<number,Nb>,Nb> B1{} ;
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      B1[i - Ns][j - Ns] = A[i][j] ;
+  B1 = invert(B1);
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      J[i][j] = B1[i - Ns][j - Ns] ;
+
+  std::array<std::array<number,Nb>,Nb> B2{} ;
+  for (auto i = Ns ; i < Ns + Nb ; ++i)
+    for (auto j = Ns ; j < Ns + Nb ; ++j)
+      B2[i - Ns][j - Ns] = A[Nb+i][Nb+j] ;
+  B2 = invert(B2);
+  
+  int par = (N >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(J,B2)
+  #endif
+  for (auto b = 1u ; b < (N / Nb - 2) ; ++b)
+    for (auto i = Ns ; i < Ns + Nb ; ++i)
+      for (auto j = Ns ; j < Ns + Nb ; ++j)
+  	J[b*Nb+i][b*Nb+j] = B2[i - Ns][j - Ns] ;
 
   std::array<std::array<number,Nb>,Nb> B3{} ;
   for (auto i = Ns ; i < Ns + Nb ; ++i)
