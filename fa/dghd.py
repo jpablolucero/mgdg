@@ -94,12 +94,18 @@ Lp = np.matrix(Lp).astype(float)
 g = sy.zeros(1,(p + 1)*n).transpose()
 f = sy.zeros(1,(p + 1)*n).transpose()
 
+[xtab2,weights2] = lo.lobatto_compute(p+1+3)
 for b in range(n):
     for i in range(p + 1):
-        g[(p + 1)*b + i] = Dom / n * (b + xtab[i]) 
-        f[(p + 1)*b + i] = sy.integrate(Fx[i],(x,0,h)).subs({h:Dom/n})
+        g[(p + 1)*b + i] = Dom / n * (b + xtab[i])
+        # for j in range(len(xtab2)):
+        #     f[(p + 1)*b + i] += float(weights2[j]*hh*\
+        #                               (Fx[i]*sy.pi*sy.pi*sy.sin(sy.pi*(x+b*h)))\
+        #                               .subs({x:xtab2[j]*hh})\
+        #                               .subs({h:hh}))
+        f[(p + 1)*b + i] += float(sy.integrate(Fx[i],(x,0,h)).subs({h:Dom/n}))
         # f[(p + 1)*b + i] = sy.integrate(Fx[i]*(x+b*h),(x,0,h)).subs({h:Dom/n})
-'''
+
 mp.grid(which='major', axis='x', linewidth=0.75, linestyle='-', color='0.75')
 mp.grid(which='minor', axis='x', linewidth=0.25, linestyle='-', color='0.75')
 mp.grid(which='major', axis='y', linewidth=0.75, linestyle='-', color='0.75')
@@ -109,12 +115,13 @@ mp.ylabel("u(x)")
 x = np.linalg.pinv(Lp) * f
 mp.plot(g,(np.array(x)).transpose()[0])
 mp.show()
-'''
+
 D = sy.Matrix(sy.zeros((p + 1)*n,(p + 1)*n))
 for b in range(n):
     for i in range((p + 1)):
         for j in range((p + 1)):
             D[(p + 1)*b+i,(p + 1)*b+j] = A[(p + 1)*b+i,(p + 1)*b+j]
+Dinv = (D.subs({d:dd,h:hh}))**(-1)
 
 # s = int((p + 1)/2)
 # D = sy.Matrix(sy.zeros((p + 1)*n,(p + 1)*n))
@@ -126,6 +133,7 @@ for b in range(n):
 #     for i in range((p + 1)):
 #         for j in range((p + 1)):
 #             D[(p + 1)*b+i-s,(p + 1)*b+j-s] = Lp[(p + 1)*b+i-s,(p + 1)*b+j-s]
+# Dinv = (D.subs({d:dd,h:hh}))**(-1)
 
 RT = sy.Matrix(sy.zeros((p + 1)*n,(p + 1)*int(n/2)))
 for k in range(0,int(((p + 1)*n)/2),p + 1):
@@ -160,12 +168,10 @@ dd = float(p*(p + 1))
 hh = 1./float(n)
 A = A.subs({d:dd,h:hh})
 
-# A0inv = (R * (A.subs({d:dd,h:hh})) * RT)**(-1)
+A0inv = (R * (A.subs({d:dd,h:hh})) * RT)**(-1)
 
-A0inv = (A0.subs({d:dd,h:2*hh}))**(-1)
-RT *= 0.5
-
-Dinv = (D.subs({d:dd,h:hh}))**(-1)
+# A0inv = (A0.subs({d:dd,h:2*hh}))**(-1)
+# RT *= 0.5
 
 x = sy.zeros((p + 1)*n,1)
 it = 0
