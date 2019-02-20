@@ -65,6 +65,6 @@ constexpr auto make_main()
 
 int main(int argc,char *argv[])
 {
-  const volatile auto x = mymain<4,2>();
+  const volatile auto x = make_main<128,2>();
   return 0;
 }
