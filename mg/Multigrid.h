@@ -198,28 +198,18 @@ constexpr auto make_multigrid_impl(const auto & A, std::index_sequence<Is...>)
 {
   const auto Rs = [&]() constexpr
     {
-      if constexpr (mf) return std::make_tuple(MFOperator(Restrict<(N >> Is),p>())...);
-      else return std::make_tuple(MFOperator(restrict_matrix<(N >> Is),p>())...);
+      return std::make_tuple(MFOperator(Restrict<(N >> Is),p>())...);
     }();
   const auto RTs = [&]() constexpr
     {
-      if constexpr (mf)
-      {
-	if constexpr (gal) return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>(0.5))...);
-	else return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>())...);
-      }
-      else
-	{
-	  if constexpr(gal) return std::make_tuple(MFOperator(prolongate_matrix<(N >> Is),p>(0.5))...);
-	  else return std::make_tuple(MFOperator(prolongate_matrix<(N >> Is),p>())...);
-	}
+      if constexpr (gal) return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>(0.5))...);
+      else return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>())...);
     }();
   const auto As = [&]() constexpr
     {
       if constexpr (gal) return make_galerkin<N/(p+1),p>();
       else return std::make_tuple(A(), make_coarse_operators<Is>(A(), Rs, RTs)...);
     }();
-
   const auto Ss = std::make_tuple(block_jacobi<p+1,t,(N >> Is)>(std::get<Is>(As))...);
   return Multigrid<N,p,prt,
   		   typename std::remove_reference<decltype(As)>::type,

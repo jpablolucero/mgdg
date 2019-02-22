@@ -108,7 +108,7 @@ class LaplaceOperator
 
     int par = (n*(p+1) >= 128) ? 1 : 0 ;
     #ifdef PARALLEL
-    #pragma omp parallel for default(none) shared(w,v)
+    #pragma omp parallel for if(par) default(none) shared(w,v)
     #endif
     for (auto b = 1u ; b < n-1 ; ++b)
       for (auto i = 0u; i < p + 1; ++i)
