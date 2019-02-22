@@ -39,9 +39,9 @@ constexpr auto mymain()
 {
   constexpr auto A = [&](){
     if constexpr (mf) return MFOperator(LaplaceOperator<nel,p>(static_cast<number>(p*(p+1)),1.));
-    else return laplaceMatrix<nel,p>(static_cast<number>(p*(p+1)),1.);
-  }();
-  const auto rhs = assemble_rhs<nel,p>([](double x){return 1.;},1.);
+    else return MFOperator(laplaceMatrix<nel,p>(static_cast<number>(p*(p+1)),1.));
+  };
+  constexpr auto rhs = assemble_rhs<nel,p>([](double x){return 1.;},1.);
   // const auto rhs = assemble_rhs<nel,p>([](double x){return M_PI*M_PI*std::sin(M_PI*x);},1.);
   const auto solution = richardson<p,false,mf>(A,rhs,1.E-8) ;
   // std::cout.precision(5);

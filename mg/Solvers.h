@@ -24,7 +24,7 @@ constexpr auto richardson(const auto & A,const auto & rhs,const number accuracy)
   	  for (auto & el : x) el = unif(re);
   	}
 
-      res = rhs - A*x ;                                   //                f - A x
+      res = rhs - A()*x ;                                   //                f - A x
       number initial_norm = std::sqrt(res*res) ;
       number norm = 1. ;
       auto it = 0u;
@@ -32,7 +32,7 @@ constexpr auto richardson(const auto & A,const auto & rhs,const number accuracy)
       const number rlx = 1. ;
       while (true)
       	{
-      	  res = rhs - A*x;                                //                f - A x
+      	  res = rhs - A()*x;                                //                f - A x
       	  norm = std::sqrt(res*res) ;                     //             \| f - A x \|
       	  if constexpr (prt) std::cout.precision(3);
       	  if constexpr (prt) std::cout << "\rN:" << std::left << std::setw(5) << std::size(res)/(p+1)
@@ -68,7 +68,7 @@ template <int p=1,bool rnd=true,bool mf=false,bool prt=false,bool rndtest=false,
 	  typename number=double>
 constexpr auto gmres(const auto & AA,const auto & rrhs,const number accuracy)
 {
-  const auto A = Eigenize<std::size(rrhs),std::size(rrhs)>(AA);
+  const auto A = Eigenize<std::size(rrhs),std::size(rrhs)>(AA());
   const auto rhs = Eigenize(rrhs);
   auto itm = 0. ;
   auto itt = 0u ;
@@ -86,7 +86,7 @@ constexpr auto gmres(const auto & AA,const auto & rrhs,const number accuracy)
 
       auto it = 0u;
 
-      const auto M = make_multigrid<std::size(rrhs),p,0,mf,false,false>(AA);
+      constexpr auto M = make_multigrid<std::size(rrhs),p,0,mf,false,false>(AA);
       long int iterations = 100;
       long int & its = iterations;
       double tolerance = accuracy;

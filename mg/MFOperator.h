@@ -30,7 +30,7 @@ public:
 
   constexpr auto operator()(const auto & v) const 
   {
-    return op(preop(v));
+    return op*(preop*v);
   }
 }; 
 
