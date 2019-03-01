@@ -42,7 +42,7 @@ constexpr auto mymain()
     else return MFOperator(laplaceMatrix<nel,p>(static_cast<number>(p*(p+1)),1.));
   };
   constexpr auto rhs = assemble_rhs<nel,p>([](double x){return 1.;},1.);
-  // const auto rhs = assemble_rhs<nel,p>([](double x){return M_PI*M_PI*std::sin(M_PI*x);},1.);
+  // constexpr auto rhs = assemble_rhs<nel,p>([](double x){return M_PI*M_PI*std::sin(M_PI*x);},1.);
   const auto solution = richardson<p,false,mf>(A,rhs,1.E-8) ;
   // std::cout.precision(5);
   // std::cout << std::left << std::setw(12) << 1./static_cast<double>(nel)
@@ -65,6 +65,24 @@ constexpr auto make_main()
 
 int main(int argc,char *argv[])
 {
-  const volatile auto x = make_main<128,2>();
+  const volatile auto x1  = make_main<128,1>();
+  // std::cout << std::endl ;
+  // const volatile auto x2  = make_main<128,2>();
+  // std::cout << std::endl ;
+  // const volatile auto x3  = make_main<128,3>();
+  // std::cout << std::endl ;
+  // const volatile auto x4  = make_main<128,4>();
+  // std::cout << std::endl ;
+  // const volatile auto x5  = make_main<128,5>();
+  // std::cout << std::endl ;
+  // const volatile auto x6  = make_main<128,6>();
+  // std::cout << std::endl ;
+  // const volatile auto x7  = make_main<128,7>();
+  // std::cout << std::endl ;
+  // const volatile auto x8  = make_main<128,8>();
+  // std::cout << std::endl ;
+  // const volatile auto x9  = make_main<128,9>();
+  // std::cout << std::endl ;
+  // const volatile auto x10 = make_main<128,10>();
   return 0;
 }

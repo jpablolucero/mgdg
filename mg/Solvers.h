@@ -28,16 +28,19 @@ constexpr auto richardson(const auto & A,const auto & rhs,const number accuracy)
       number initial_norm = std::sqrt(res*res) ;
       number norm = 1. ;
       auto it = 0u;
-      const auto M = make_multigrid<std::size(res),p,0,mf,false,prt>(A);
+      const bool gal = false ;
+      const auto M = make_multigrid<std::size(res),p,0,mf,gal,prt>(A);
       const number rlx = 1. ;
       while (true)
       	{
       	  res = rhs - A()*x;                                //                f - A x
-      	  norm = std::sqrt(res*res) ;                     //             \| f - A x \|
+      	  norm = std::sqrt(res*res) ;                       //             \| f - A x \|
       	  if constexpr (prt) std::cout.precision(3);
       	  if constexpr (prt) std::cout << "\rN:" << std::left << std::setw(5) << std::size(res)/(p+1)
-      	  			       << "p:" << std::left << std::setw(3) << p
-      	  			       << "rlx:" << std::left << std::setw(10) << rlx
+				       << "p:" << std::left << std::setw(3) << p << std::flush ;
+	  if constexpr (prt and gal) std::cout << " RG " << std::flush ;
+	  else if constexpr (prt) std::cout << " RR " << std::flush ;
+	  if constexpr (prt) std::cout << "rlx:" << std::left << std::setw(10) << rlx
       	  			       << std::flush ;
       	  if constexpr (prt) std::cout << " Iteration: " << std::left << std::setw(7)
       	  			       << it << std::flush;

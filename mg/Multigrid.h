@@ -81,9 +81,9 @@ public:
 	number norm = 1. ;
 	while (true)
 	  {
-	    resq = res - A*q;                                                       
+	    resq = res - A*q;
 	    norm = std::sqrt(resq*resq) ;
-	    if (norm < 1.E-12) break ;
+	    if (norm < 1.E-13) break ;
 	    q = q + invert<nr>(A)*resq ;
 	  }
 	return q;
@@ -124,9 +124,9 @@ public:
 	number norm = 1. ;
 	while (true)
 	  {
-	    resq = res - A*q;                                                       
+	    resq = res - A*q;
 	    norm = std::sqrt(resq*resq) ;
-	    if (norm < 1.E-10) break ;
+	    if (norm < 1.E-12) break ;
 	    q = q + vcycle0<p+1,1,2>(std::forward<decltype(resq)>(resq),2./3.);
 	  }
 	return q;
@@ -180,18 +180,6 @@ public:
   }
 };
 
-template <std::size_t N,std::size_t p,std::size_t ...Is,typename number=double>
-constexpr auto make_galerkin_impl(const std::index_sequence<Is...>)
-{
-  return std::make_tuple(laplaceMatrix<(N >> Is),p>(static_cast<number>(p*(p+1)),1.)...);
-}
-
-template <std::size_t N,std::size_t p=1,typename number=double>
-constexpr auto make_galerkin()
-{
-  return make_galerkin_impl<N,p>(std::make_index_sequence<logg2(2*N)>());
-}
-
 template <std::size_t N,std::size_t p=1,std::size_t t=0,bool mf=false,bool gal=false,bool prt=true,
 	  std::size_t... Is,typename number=double>
 constexpr auto make_multigrid_impl(const auto & A, std::index_sequence<Is...>)
@@ -202,13 +190,25 @@ constexpr auto make_multigrid_impl(const auto & A, std::index_sequence<Is...>)
     }();
   const auto RTs = [&]() constexpr
     {
-      if constexpr (gal) return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>(0.5))...);
-      else return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>())...);
+      return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>())...);
     }();
   const auto As = [&]() constexpr
     {
-      if constexpr (gal) return make_galerkin<N/(p+1),p>();
-      else return std::make_tuple(A(), make_coarse_operators<Is>(A(), Rs, RTs)...);
+      if constexpr (gal)
+      {
+	if constexpr (mf)
+	return
+	std::make_tuple(A(),
+			MFOperator(LaplaceOperator<(N >> Is)/(p+1)/2,p>
+				   (static_cast<number>(p*(p+1)),1.,2.))...);
+	else
+	return
+	    std::make_tuple(A(),
+			    laplaceMatrix<(N >> Is)/(p+1)/2,p>
+			    (static_cast<number>(p*(p+1)),1.,2.)...);
+      }
+      else
+	return std::make_tuple(A(),make_coarse_operators<Is>(A(), Rs, RTs)...);
     }();
   const auto Ss = std::make_tuple(block_jacobi<p+1,t,(N >> Is)>(std::get<Is>(As))...);
   return Multigrid<N,p,prt,
@@ -228,6 +228,5 @@ constexpr auto make_multigrid(const auto & A)
 {
   return make_multigrid_impl<N,p,t,mf,gal,prt>(A,std::make_index_sequence<logg2(N/(p+1))-1>());
 }
-
 
 #endif /* MULTIGRID_H */
