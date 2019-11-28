@@ -1,4 +1,3 @@
-Multigrid Discontinuous Galerkin Reaction Diffusion solver
-==========================================================
+# Compile-time capable high degree multigrid DG solver
 
-C++17 based.
+TODO: Documentation.
