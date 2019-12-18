@@ -1,3 +1,3 @@
-# Compile-time capable high degree multigrid DG solver
+# Compile-time capable high order multigrid DG solver
 
 TODO: Documentation.
