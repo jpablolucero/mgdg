@@ -10,7 +10,8 @@
 #include <tuple>
 
 template <std::size_t nr, typename number=double>
-constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<number,nr> >::type
 operator *(const number x, const std::array<number,nr> & y)
 {
   std::array<number,nr> res{};
@@ -38,7 +39,8 @@ operator *(const std::array<number,nr> & x, const std::array<number,nr> & y)
 }
 
 template <std::size_t nr, typename number=double>
-constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<number,nr> >::type
 operator -(const std::array<number,nr> & x, const std::array<number,nr> & y)
 {
   std::array<number,nr> res{};
@@ -52,7 +54,23 @@ operator -(const std::array<number,nr> & x, const std::array<number,nr> & y)
 }
 
 template <std::size_t nr, typename number=double>
-constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<number,nr> >::type
+operator -=(std::array<number,nr> & x, const std::array<number,nr> & y)
+{
+  std::array<number,nr> res{};
+  int par = (nr >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(x,y,res)
+  #endif
+  for (auto i=0u;i<nr;++i)
+    x[i] -= y[i];
+  return res ;
+}
+
+template <std::size_t nr, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<number,nr> >::type
 operator +(const std::array<number,nr> & x, const std::array<number,nr> & y)
 {
   std::array<number,nr> res{};
@@ -65,9 +83,26 @@ operator +(const std::array<number,nr> & x, const std::array<number,nr> & y)
   return res ;
 }
 
+template <std::size_t nr, typename number=double>
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<number,nr> >::type
+operator +=(std::array<number,nr> & x, const std::array<number,nr> & y)
+{
+  std::array<number,nr> res{};
+  int par = (nr >= 128) ? 1 : 0 ;
+  #ifdef PARALLEL
+  #pragma omp parallel for if(par) default(none) shared(x,y,res)
+  #endif
+  for (auto i=0u;i<nr;++i)
+    x[i] += y[i];
+  return res ;
+}
+
 template <std::size_t nr, std::size_t nc, typename number=double>
-constexpr typename std::enable_if<std::is_arithmetic<number>::value,std::array<number,nr> >::type
-operator *(const std::array<std::array<number,nc>,nr> & A,const std::array<number,nc> & x)
+constexpr typename std::enable_if<std::is_arithmetic<number>::value,
+				  std::array<number,nr> >::type
+operator *(const std::array<std::array<number,nc>,nr> & A,
+	   const std::array<number,nc> & x)
 {
   std::array<number,nr> res{} ;
   int par = (nr >= 128) ? 1 : 0 ;
@@ -80,14 +115,15 @@ operator *(const std::array<std::array<number,nc>,nr> & A,const std::array<numbe
   return res ;
 }
 
-template <std::size_t nrA, std::size_t ncA, std::size_t nrB, std::size_t ncB, typename number=double>
+template <std::size_t nrA, std::size_t ncA, std::size_t nrB, std::size_t ncB,
+	  typename number=double>
 constexpr typename std::enable_if<std::is_arithmetic<number>::value,
 				  std::array<std::array<number,ncB>,nrA> >::type
 operator *(const std::array<std::array<number,ncA>,nrA> & A,
 	   const std::array<std::array<number,ncB>,nrB> & B)
 {
   std::array<std::array<number,ncB>,nrA> res{} ;
-  int par = ((nrA >= 128) or (ncA >= 128) or (nrB >= 128) or (ncB >= 128)) ? 1 : 0 ;
+  int par = ((nrA >= 128) or (ncA >= 128) or (nrB >= 128) or (ncB >= 128)) ? 1 : 0;
   #ifdef PARALLEL
   #pragma omp parallel for if(par) default(none) shared(A,B,res)
   #endif
@@ -157,7 +193,7 @@ operator *(const number A,const std::array<std::array<number,ncB>,nrB> & B)
   std::array<std::array<number,ncB>,nrB> res{} ;
   int par = ((nrB >= 128) or (ncB >= 128)) ? 1 : 0 ;
   #ifdef PARALLEL
-  #pragma omp parallel for if(par) default(none) shared(B,res)
+  #pragma omp parallel for if(par) default(none) shared(A, B,res)
   #endif
   for (auto i=0u;i<nrB;++i)
     for (auto j=0u;j<nrB;++j)      
@@ -169,7 +205,6 @@ constexpr auto operator *(const auto & A,const auto & x)
 {
   return A(x) ;
 }
-
 
 template <std::size_t nr, std::size_t nc, typename number=double>
 constexpr auto print(const std::array<std::array<number,nc>,nr> & A)
@@ -230,10 +265,10 @@ constexpr auto invert(const std::array<std::array<number, 1>,1>& x)
 
 template <typename number=double>
 constexpr auto invert(const std::array<std::array<number,2>,2>& a) {
-  const auto A = std::array<std::array<number,1>,1>{std::array<number,1>{a[0][0]}} ;
-  const auto B = std::array<std::array<number,1>,1>{std::array<number,1>{a[0][1]}} ;
-  const auto C = std::array<std::array<number,1>,1>{std::array<number,1>{a[1][0]}} ;
-  const auto D = std::array<std::array<number,1>,1>{std::array<number,1>{a[1][1]}} ;
+  const auto A = std::array<std::array<number,1>,1>{std::array<number,1>{a[0][0]}};
+  const auto B = std::array<std::array<number,1>,1>{std::array<number,1>{a[0][1]}};
+  const auto C = std::array<std::array<number,1>,1>{std::array<number,1>{a[1][0]}};
+  const auto D = std::array<std::array<number,1>,1>{std::array<number,1>{a[1][1]}};
 
   const auto [Q, R, S, T] = block_inverse(A, B, C, D);
 

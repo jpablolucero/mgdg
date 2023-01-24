@@ -27,6 +27,7 @@ template <std::size_t N,std::size_t M,typename number=double>
 Eigen::Matrix<number,N,M> Eigenize(const auto & data)
 {
   Eigen::Matrix<number,N,M> A{};
+  A.setZero();
   for (auto j = 0u ; j < N ; j++)
     {
       std::array<number,N> x{};

@@ -30,21 +30,24 @@ constexpr auto prolongate(const auto & RTs, std::index_sequence<Is...>)
 }
 
 template <std::size_t... Is>
-constexpr auto make_coarse_operators_impl(const auto & A, const auto & Rs, const auto & RTs,
+constexpr auto make_coarse_operators_impl(const auto & A, const auto & Rs,
+					  const auto & RTs,
 					  std::index_sequence<Is...> is)
 {
   return restrict(Rs, is) * A * prolongate(RTs, is);
 }
 
 template <std::size_t Index>
-constexpr auto make_coarse_operators(const auto & A, const auto & Rs, const auto & RTs)
+constexpr auto make_coarse_operators(const auto & A, const auto & Rs,
+				     const auto & RTs)
 {
-  return make_coarse_operators_impl(A, Rs, RTs, std::make_index_sequence<Index + 1>());
+  return
+    make_coarse_operators_impl(A, Rs, RTs, std::make_index_sequence<Index + 1>());
 }
 
 template <std::size_t N,std::size_t p,bool prt,
-	  typename Operator,typename Smoother,typename Restriction,typename Prolongation,
-	  typename number=double>
+	  typename Operator,typename Smoother,typename Restriction,
+	  typename Prolongation,typename number=double>
 class Multigrid
 {
 public:
@@ -68,15 +71,14 @@ private:
 
 public:
   
-  template <std::size_t n0=p+1,std::size_t s=1,std::size_t m=1>
-  constexpr auto vcycle0(const auto && res,const number rlx=1.) const
+  template <std::size_t nr, std::size_t n0=p+1,std::size_t s=1,std::size_t m=1>
+  constexpr auto vcycle0(const auto & res,const number rlx=1.) const
   {
-    const auto nr = std::size(res) ;
-    const auto nc = std::size(res) ;
     const auto & A = std::get<logg2(N/nr)-1>(As);
     if constexpr (nr == n0)
       {
-	typename std::remove_const<typename std::remove_reference<decltype(res)>::type>::type
+	typename std::remove_const<typename std::remove_reference<decltype(res)>::
+				   type>::type
 	  q{},resq{};
 	number norm = 1. ;
 	while (true)
@@ -90,7 +92,8 @@ public:
       }
     else
       {
-	typename std::remove_const<typename std::remove_reference<decltype(res)>::type>::type x{};
+	typename std::remove_const<typename std::remove_reference<decltype(res)>::
+				   type>::type x{};
 	const auto & B = std::get<logg2(N/nr)-1>(Ss);
 
 	for (auto sit = 0;sit<s;++sit)
@@ -99,9 +102,9 @@ public:
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	const auto & RT = std::get<logg2(N/nr)-1>(prol);
 
-	x = x + RT*vcycle0<n0,m*s,m>(std::forward<const decltype(R*(res-A*x))>(R*(res-A*x)),rlx);
-	                                 // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                         //                    y_1 = x_1 + q_1
+	x = x + RT*vcycle0<nr/2,n0,m*s,m>(R*(res-A*x),rlx);
+	// q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+	//                    y_1 = x_1 + q_1
 
 	for (auto sit = 0;sit<s;++sit)
 	  x = x + rlx * B * (res - A*x);           //    x_1 = x_0 + B (g - A x_0)
@@ -110,16 +113,15 @@ public:
       }
   }
   
-  template <std::size_t n0=p+1,std::size_t s=1,std::size_t m=1>
-  constexpr auto vcycle(const auto && res,const number rlx=1.) const
+  template <std::size_t nr, std::size_t n0=p+1,std::size_t s=1,std::size_t m=1>
+  constexpr auto vcycle(const auto & res,const number rlx=1.) const
   {
-    const auto nr = std::size(res) ;
-    const auto nc = std::size(res) ;
     const auto & A = std::get<logg2(N/nr)-1>(As);
     if constexpr (nr == n0)
       {
 	if constexpr (prt) std::cout << nr/(p + 1) << std::flush;
-	typename std::remove_const<typename std::remove_reference<decltype(res)>::type>::type
+	typename std::remove_const<typename std::remove_reference<decltype(res)>::
+				   type>::type
 	  q{},resq{};
 	number norm = 1. ;
 	while (true)
@@ -127,13 +129,14 @@ public:
 	    resq = res - A*q;
 	    norm = std::sqrt(resq*resq) ;
 	    if (norm < 1.E-12) break ;
-	    q = q + vcycle0<p+1,1,2>(std::forward<decltype(resq)>(resq),2./3.);
+	    q = q + vcycle0<nr,p+1,1,2>(resq,rlx);
 	  }
 	return q;
       }
     else
       {
-	typename std::remove_const<typename std::remove_reference<decltype(res)>::type>::type x{};
+	typename std::remove_const<typename std::remove_reference<decltype(res)>::
+				   type>::type x{};
 	const auto & B = std::get<logg2(N/nr)-1>(Ss);
 
 	if constexpr (prt) std::cout << nr/(p + 1) << std::flush;
@@ -147,15 +150,15 @@ public:
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	const auto & RT = std::get<logg2(N/nr)-1>(prol);
 
-	x = x + RT * vcycle<n0,m*s,m>(std::forward<const decltype(R*(res-A*x))>(R*(res-A*x)),rlx) ;
-                                         // q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-                                         //              y_1 = x_1 + q_1
+	x = x + RT * vcycle<nr/2,n0,m*s,m>(R*(res-A*x),rlx) ;
+	// q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
+	//              y_1 = x_1 + q_1
       
 	if constexpr (prt) std::cout << " \u2197 " <<  std::flush;
 
 	for (auto sit = 0;sit<s;++sit)
 	  x = x + rlx * B * (res - A*x);           //    x_1 = x_0 + B (g - A x_0)
-
+	
 	if constexpr (prt) std::cout << nr/(p + 1) << std::flush;
 	if constexpr (prt and (s>1)) std::cout << "(" << s << ")" << std::flush ;
 
@@ -163,54 +166,85 @@ public:
       }
   }
 
-  constexpr auto solve(const Eigen::Matrix<number,N,1> && res, number rlx=1.) const
+  constexpr auto solve(const Eigen::Matrix<number,N,1> & res, number rlx=1.) const
   {
     std::array<double,N> rres{} ;
     for (auto i = 0u;i<N;++i)
       rres[i] = res(i) ;
-    const auto result = vcycle<p+1,1,2>
-      (std::forward<typename std::remove_reference<decltype(rres)>::type>(rres),rlx);
+    const auto result = vcycle<N,p+1,2,2>(rres,rlx);
     return Eigenize(result);
   }
 
-  constexpr auto solve(const auto && res, number rlx=1.) const
+  constexpr auto solve(const std::array<double,N> & res, number rlx=1.) const
   {
-    return vcycle<N/2,1,2>
-      (std::forward<typename std::remove_reference<decltype(res)>::type>(res),rlx);
+    return vcycle<N,p+1,2,2>(res,rlx);
   }
 };
 
-template <std::size_t N,std::size_t p=1,std::size_t t=0,bool mf=false,bool gal=false,bool prt=true,
+template <std::size_t N,std::size_t p=1,std::size_t t=0,bool mf=false,
+	  bool gal=false,bool prt=true,
 	  std::size_t... Is,typename number=double>
 constexpr auto make_multigrid_impl(const auto & A, std::index_sequence<Is...>)
 {
   const auto Rs = [&]() constexpr
     {
-      return std::make_tuple(MFOperator(Restrict<(N >> Is),p>())...);
+      if constexpr
+	(mf)
+	  return std::make_tuple(MFOperator(std::forward<Restrict<(N >> Is),p>>
+					    (Restrict<(N >> Is),p>(0.5)))...);
+      else
+	return
+	  std::make_tuple
+	  (MFOperator
+	   (std::forward<RestrictMatrixType<(N >> Is),p>>
+	    (restrict_matrix<(N >> Is),p>(0.5)))...);
     }();
+
   const auto RTs = [&]() constexpr
     {
-      return std::make_tuple(MFOperator(Prolongate<(N >> Is),p>())...);
+      if constexpr
+	(mf)
+	  return std::make_tuple
+	  (MFOperator
+	   (std::forward<Prolongate<(N >> Is),p>>
+	    (Prolongate<(N >> Is),p>(0.5,0.5)))...);
+      else
+	return std::make_tuple
+	  (MFOperator
+	   (std::forward<ProlongateMatrixType<(N >> Is),p>>
+	    (prolongate_matrix<(N >> Is),p>(0.5,0.5)))...);
     }();
+
   const auto As = [&]() constexpr
     {
       if constexpr (gal)
       {
-	if constexpr (mf)
-	return
-	std::make_tuple(A(),
-			MFOperator(LaplaceOperator<(N >> Is)/(p+1)/2,p>
-				   (static_cast<number>(p*(p+1)),1.,2.))...);
+	if constexpr
+	  (mf)
+	    return
+	    std::make_tuple(A,
+			    MFOperator
+			    (std::forward<LaplaceOperator<(N >> Is)/(p+1)/2,p>>
+			     (LaplaceOperator<(N >> Is)/(p+1)/2,p>
+			      (static_cast<double>(p*(p+1)),1.)))...);
 	else
-	return
-	    std::make_tuple(A(),
-			    laplaceMatrix<(N >> Is)/(p+1)/2,p>
-			    (static_cast<number>(p*(p+1)),1.,2.)...);
+	  return
+	    std::make_tuple
+	    (A,
+	     std::forward<LaplaceMatrixType<(N >> Is)/(p+1)/2,p> >
+	     (laplaceMatrix<(N >> Is)/(p+1)/2,p>
+	      (static_cast<double>(p*(p+1)),1.))...);
       }
       else
-	return std::make_tuple(A(),make_coarse_operators<Is>(A(), Rs, RTs)...);
+	return std::make_tuple(A,make_coarse_operators<Is>(A, Rs, RTs)...);
     }();
-  const auto Ss = std::make_tuple(block_jacobi<p+1,t,(N >> Is)>(std::get<Is>(As))...);
+  
+  const auto Ss = [&]() constexpr
+		  {
+		    return std::make_tuple(block_jacobi<p+1,t,(N >> Is)>
+					   (std::get<Is>(As))...);
+		  }();
+  
   return Multigrid<N,p,prt,
   		   typename std::remove_reference<decltype(As)>::type,
   		   typename std::remove_reference<decltype(Ss)>::type,
@@ -222,11 +256,13 @@ constexpr auto make_multigrid_impl(const auto & A, std::index_sequence<Is...>)
      std::forward<typename std::remove_reference<decltype(RTs)>::type>(RTs));
 }
 
-template <std::size_t N,std::size_t p=1,std::size_t t=0,bool mf=false,bool gal=false,bool prt=true,
+template <std::size_t N,std::size_t p=1,std::size_t t=0,bool mf=false,
+	  bool gal=false,bool prt=true,
 	  typename number=double>
 constexpr auto make_multigrid(const auto & A)
 {
-  return make_multigrid_impl<N,p,t,mf,gal,prt>(A,std::make_index_sequence<logg2(N/(p+1))-1>());
+  return make_multigrid_impl<N,p,t,mf,gal,prt>
+    (A,std::make_index_sequence<logg2(N/(p+1))-1>());
 }
 
 #endif /* MULTIGRID_H */

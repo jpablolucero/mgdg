@@ -3,14 +3,24 @@
 
 constexpr auto mfid = [](const auto v) {return v;};
   
-template <typename Op, typename Preop=decltype(mfid), typename number=double>
+template <typename Op, typename Preop=decltype(mfid)>
 class MFOperator
 {
 public:
 
+  constexpr MFOperator(const Op && op_) :
+    op{std::forward<const Op>(op_)},
+    preop{std::forward<const Preop>(mfid)}
+  {}
+
+  constexpr MFOperator(const Op && op_,const Preop && preop_) :
+    op{std::forward<const Op>(op_)},
+    preop{std::forward<const Preop>(preop_)}
+  {}
+
   constexpr MFOperator(const Op & op_,const Preop & preop_=mfid) :
-    op(op_),
-    preop(preop_)
+    op{op_},
+    preop{preop_}
   {}
 
   constexpr MFOperator(const MFOperator & mfoperator):

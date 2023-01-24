@@ -6,6 +6,9 @@
 #include <LagrangeBasis.h>
 
 template <std::size_t n,std::size_t p=1,typename number=double>
+using LaplaceMatrixType = std::array<std::array<number,(p+1)*n>,(p+1)*n> ;
+
+template <std::size_t n,std::size_t p=1,typename number=double>
 constexpr auto laplaceMatrix(const number d=static_cast<number>(p*(p+1)),const number L=1.,
 			     const number factor = 1.)
 {
@@ -39,7 +42,7 @@ constexpr auto laplaceMatrix(const number d=static_cast<number>(p*(p+1)),const n
 	  - (f.diff(i,h) + 0) / 2 * (0 - f(j,0.))
 	  + d / h * (f(i,h) - 0) * (0 - f(j,0.));
       }
-  std::array<std::array<number,(p+1)*n>,(p+1)*n> A{};
+  LaplaceMatrixType<n,p,number> A{};
   if constexpr (n == 1)
 		 for (auto i = 0u ; i < p + 1 ; ++i)
 		   for (auto j = 0u ; j < p + 1 ; ++j)
