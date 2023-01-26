@@ -2,6 +2,8 @@
 
 After a fresh clone of this repository, the compilation will not lead to a compile-time calculation, but to a series of problem solutions in different size meshes.
 
+Make sure GCC 10 is installed and the GNU EIGEN library. Provide the locations of those libraries in the Makefile.
+
 To execute an example compile-time calculation, replace the line
 ```
 const volatile auto x1  = make_main<128,1>();
