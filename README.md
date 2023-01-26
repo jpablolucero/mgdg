@@ -28,4 +28,20 @@ The compilation should take a couple minutes and occupy around 4 GB memory.
 
 A file ```mgrid.s``` will be created with the assembly result of a compile-time executed calculation.
 
+To obtain the solution we need to disassemble the binary (note that we don't need the source code) as follows:
+```
+readelf -x .data mgrid
+
+Hex dump of section '.data':
+  0x00404040 00000000 00000000 00000000 00000000 ................
+  0x00404050 00000000 00000000 00000000 00000000 ................
+  0x00404060 df50b595 9696863f da992585 8787b73f .P.....?..%....?
+  0x00404070 79cff075 7878b83f 3ab6bdfc ffffbf3f y..uxx.?:......?
+  0x00404080 3ab6bdfc ffffbf3f 79cff075 7878b83f :......?y..uxx.?
+  0x00404090 da992585 8787b73f df50b595 9696863f ..%....?.P.....?
+```
+This is the solution to a problem with 4 linear elements, so a vector of 8 doubles.
+
+The values are stored reversed by pairs so for example, the first value `df50b595 9696863f` should be read `3f 86 96 96 95 b5 50 df` which converted to double is `0.011029411739095383`.
+
 TODO: Documentation.
