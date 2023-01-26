@@ -42,6 +42,6 @@ Hex dump of section '.data':
 ```
 This is the solution to a problem with 4 linear elements, so a vector of 8 doubles.
 
-The values are stored reversed by pairs so for example, the first value `df50b595 9696863f` should be read `3f 86 96 96 95 b5 50 df` which converted to double is `0.011029411739095383`.
+The values MIGHT be reversed by pairs depending on your architecture. So for example, the first value `df50b595 9696863f` might have to be read `3f 86 96 96 95 b5 50 df` which converted to double using MATLAB is `0.011029411739095383`.
 
 TODO: Documentation.
