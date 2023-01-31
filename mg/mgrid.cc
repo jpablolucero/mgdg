@@ -68,6 +68,6 @@ constexpr auto make_main()
 int main(int argc,char *argv[])
 {
   const volatile auto x1  = make_main<128,1>();
-  // const volatile auto x1  = mymain<8,1>();
+  // const volatile auto x1  = mymain<4,1>();
   return 0;
 }
