@@ -102,7 +102,18 @@ constexpr auto gmres(const auto & AA,const auto rrhs,const number accuracy)
       double & tol = tolerance;
       const auto gmres_res = Eigen::internal::gmres(A,rhs,x,M,its,100,tol,p,rlx);
       it = its;
-      
+      if constexpr (prt) std::cout.precision(3);
+      if constexpr (prt) std::cout << "\rN:" << std::left << std::setw(5)
+				   << std::size(x)/(p+1)
+				   << "p:" << std::left << std::setw(3)
+				   << p << std::flush ;
+      if constexpr (prt and gal) std::cout << " RG " << std::flush ;
+      else if constexpr (prt) std::cout << " RR " << std::flush ;
+      if constexpr (prt) std::cout << "rlx:" << std::left << std::setw(10)
+				   << rlx << std::flush ;
+      if constexpr (prt) std::cout << " Iteration: " << std::left
+				   << std::setw(7) << it << std::flush;
+
       if constexpr (!rndtest)
       		     {
 		       std::cout << std::endl ;

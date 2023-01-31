@@ -17,7 +17,7 @@ operator *(const number x, const std::array<number,nr> & y)
   std::array<number,nr> res{};
   int par = (nr >= 128) ? 1 : 0 ;
   #ifdef PARALLEL
-  #pragma omp parallel for if(par) default(none) shared(y,res)
+  #pragma omp parallel for if(par) default(none) shared(x, y, res)
   #endif
   for (auto i=0u;i<nr;++i)
     res[i] = x*y[i];

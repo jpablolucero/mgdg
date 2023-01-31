@@ -16,7 +16,7 @@ constexpr auto laplaceMatrix(const number d=static_cast<number>(p*(p+1)),const n
   const auto h = L/static_cast<number>(n);
   const auto f = make_lagrange_basis<p>(h);
   const auto basis = make_lagrange_basis<p+1>(h);
-
+  
   for (auto i = 0u; i < p + 1; ++i)
     for (auto j = 0u; j < p + 1; ++j)
       {
@@ -47,9 +47,14 @@ constexpr auto laplaceMatrix(const number d=static_cast<number>(p*(p+1)),const n
 		 for (auto i = 0u ; i < p + 1 ; ++i)
 		   for (auto j = 0u ; j < p + 1 ; ++j)
 		     {
-		       if ((i==0)or(j==0)) A[i][j] = CM0[i][j] ;
-		       else if ((i==p)or(j==p)) A[i][j] = CM1[i][j] ;
-		       else A[i][j] = CM[i][j] ;
+		       A[i][j] = 
+			 basis.integrate([&f,i,j](const number x){return f.diff(i,x)*f.diff(j,x);})
+			 - 2.*(0 - f(i,0.)) * (0 + f.diff(j,0.)) / 2. 
+			 - 2.*(0 + f.diff(i,0.)) / 2. * (0 - f(j,0.))
+			 - 2.*(f(i,h) - 0) * (f.diff(j,h) + 0) / 2 
+			 - 2.*(f.diff(i,h) + 0) / 2. * (f(j,h) - 0)
+			 + 2.*d / h * (0 - f(i,0.)) * (0 - f(j,0.))
+			 + 2.*d / h * (f(i,h) - 0) * (f(j,h) - 0);		       
 		     }
   else 
     for (auto b = 0u ; b < n ; ++b)

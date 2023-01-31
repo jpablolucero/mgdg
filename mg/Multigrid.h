@@ -144,13 +144,17 @@ public:
 
 	for (auto sit = 0;sit<s;++sit)
 	  x = x + rlx * B * (res - A*x);           //    x_1 = x_0 + B (g - A x_0)
-
+	
 	if constexpr (prt) std::cout << " \u2198 " << std::flush;
       
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	const auto & RT = std::get<logg2(N/nr)-1>(prol);
 
-	x = x + RT * vcycle<nr/2,n0,m*s,m>(R*(res-A*x),rlx) ;
+	std::array<number,nr/2> qq{} ;
+	qq = vcycle<nr/2,n0,m*s,m>(R*(res-A*x),rlx) ;
+	
+	x = x + RT * qq ; 
+
 	// q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
 	//              y_1 = x_1 + q_1
       
@@ -207,12 +211,12 @@ constexpr auto make_multigrid_impl(const auto & A, std::index_sequence<Is...>)
 	  return std::make_tuple
 	  (MFOperator
 	   (std::forward<Prolongate<(N >> Is),p>>
-	    (Prolongate<(N >> Is),p>(0.5,0.5)))...);
+	    (Prolongate<(N >> Is),p>(0.5,(gal)? 1.: 0.5)))...);
       else
 	return std::make_tuple
 	  (MFOperator
 	   (std::forward<ProlongateMatrixType<(N >> Is),p>>
-	    (prolongate_matrix<(N >> Is),p>(0.5,0.5)))...);
+	    (prolongate_matrix<(N >> Is),p>(0.5,(gal)? 1.: 0.5)))...);
     }();
 
   const auto As = [&]() constexpr
