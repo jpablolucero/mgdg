@@ -22,7 +22,7 @@ const auto solution = richardson<p,false,mf,false>(A,rhs,1.E-8) ;
 ```
 at ```mymain()```.
 
-Edit the ```Makefile``` to include the location of your installation of ```gcc``` version 8.2 or newer and run ```make static```.
+Run ```make static```.
 
 The compilation should take a couple minutes and occupy around 4 GB memory.
 
@@ -44,4 +44,4 @@ This is the solution to a problem with 4 linear elements, so a vector of 8 doubl
 
 The values MIGHT be reversed by pairs depending on your architecture. So for example, the first value `df50b595 9696863f` might have to be read `3f 86 96 96 95 b5 50 df` which converted to double using MATLAB is `0.011029411739095383`.
 
-TODO: Documentation.
+TODO: More documentation.
