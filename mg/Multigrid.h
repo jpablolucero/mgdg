@@ -150,13 +150,7 @@ public:
 	const auto & R = std::get<logg2(N/nr)-1>(rest);
 	const auto & RT = std::get<logg2(N/nr)-1>(prol);
 
-	std::array<number,nr/2> qq{} ;
-	qq = vcycle<nr/2,n0,m*s,m>(R*(res-A*x),rlx) ;
-	
-	x = x + RT * qq ; 
-
-	// q_1 = q_0 + RT A_0^{-1} (R (g - A x_1) - A_0 R q_0)
-	//              y_1 = x_1 + q_1
+	x = x + RT * vcycle<nr/2,n0,m*s,m>(R*(res-A*x),rlx) ; 
       
 	if constexpr (prt) std::cout << " \u2197 " <<  std::flush;
 
@@ -175,13 +169,13 @@ public:
     std::array<double,N> rres{} ;
     for (auto i = 0u;i<N;++i)
       rres[i] = res(i) ;
-    const auto result = vcycle<N,p+1,2,2>(rres,rlx);
+    const auto result = vcycle<N,p+1,1,2>(rres,rlx);
     return Eigenize(result);
   }
 
   constexpr auto solve(const std::array<double,N> & res, number rlx=1.) const
   {
-    return vcycle<N,p+1,2,2>(res,rlx);
+    return vcycle<N,p+1,1,2>(res,rlx);
   }
 };
 
