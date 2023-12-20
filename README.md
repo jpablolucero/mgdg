@@ -22,6 +22,8 @@ const auto solution = richardson<p,false,mf,false>(A,rhs,1.E-8) ;
 ```
 at ```mymain()```.
 
+Execute ```ulimit -s unlimited``` to unleash the stack, otherwise one would get a stack overflow.
+
 Run ```make static```.
 
 The compilation should take a couple minutes and occupy around 4 GB memory.
